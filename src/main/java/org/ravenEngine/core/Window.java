@@ -2,6 +2,8 @@ package org.ravenEngine.core;
 
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
+import org.ravenEngine.io.KeyListener;
+import org.ravenEngine.io.MouseListener;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -39,6 +41,12 @@ public class Window {
         if(windowHandle == NULL){
             throw new RuntimeException("Fallo al crear la ventana de GLFW");
         }
+
+        // Registrar callbacks de inputs
+        glfwSetCursorPosCallback(windowHandle, MouseListener::mousePosCallback);
+        glfwSetMouseButtonCallback(windowHandle, MouseListener::mouseButtonCallback);
+        glfwSetScrollCallback(windowHandle, MouseListener::mouseScrollCallback);
+        glfwSetKeyCallback(windowHandle, KeyListener::keyCallback);
 
         //unir ventana a hilo de ejecución
         glfwMakeContextCurrent(windowHandle);

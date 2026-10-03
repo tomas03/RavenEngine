@@ -1,5 +1,8 @@
 package org.ravenEngine.core;
 
+import org.ravenEngine.io.KeyListener;
+import org.ravenEngine.io.MouseListener;
+
 import static org.lwjgl.glfw.GLFW.glfwGetTime;
 import static org.lwjgl.opengl.GL11.*;
 
@@ -38,12 +41,20 @@ public class Engine {
             update(deltaTime);
             render();
 
+            MouseListener.endFrame();
+
             //Actualizar ventana
             window.update();
         }
     }
     private void update(float dt){
         //Movimientos de pj, crecimiento de planta y paso de tiempo
+        if (KeyListener.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE)) {
+            System.out.println("Espacio presionado! dt: " + dt);
+        }
+        if (MouseListener.mouseButtonDown(0)) {
+            System.out.println("Click en X: " + MouseListener.getX() + " | Y: " + MouseListener.getY());
+        }
     }
     private void render(){
         //aca se hacen los dibujos con OpenGL
