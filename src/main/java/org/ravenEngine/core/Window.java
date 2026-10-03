@@ -50,5 +50,20 @@ public class Window {
         glfwShowWindow(windowHandle);
 
         //detectar placa de video y cargar las funciones de OpenGL
+        GL.createCapabilities();
+    }
+    public void update(){
+        //intercambiar buffer de imagen
+        glfwSwapBuffers(windowHandle);
+        //Leemos los inputs
+        glfwPollEvents();
+    }
+    public boolean shouldClose(){
+        return glfwWindowShouldClose(windowHandle);
+    }
+    public void cleanup(){
+        //rompemos todoo pero prolijo al salir
+        glfwDestroyWindow(windowHandle);
+        glfwTerminate();
     }
 }
