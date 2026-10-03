@@ -11,57 +11,49 @@ public class Engine {
     private boolean isRunning;
 
     public Engine() {
-        this.window =new Window("RavenEngine-AlquimistShop",1280,720);
+        this.window = new Window("RavenEngine - AlquimistShop", 1280, 720);
     }
-    public void start(){
+
+    public void start() {
         window.init();
-        isRunning=true;
+        isRunning = true;
         runLoop();
-
-        //cuando sale del loop limpiamos para que quede bonito
-        window.cleanup();
+        cleanup();
     }
 
-    private void runLoop(){
-        //tomar el tiempo exacto antes de entrar al bucle
+    private void runLoop() {
         double lastFrameTime = glfwGetTime();
 
-        while(isRunning && !window.shouldClose()){
-            //Calcular DeltaTime
+        while (isRunning && !window.shouldClose()) {
             double currentFrameTime = glfwGetTime();
-            float deltaTime =(float)(currentFrameTime - lastFrameTime);
+            float deltaTime = (float) (currentFrameTime - lastFrameTime);
             lastFrameTime = currentFrameTime;
 
-            //Limpieza de pantalla
-            //Borrar los dibujos del anterior frame y pintar de un color solido (Negro/gris oscuro)
-            glClearColor(0.1f,0.1f,0.15f,1.0f);
+            // Limpieza de pantalla (color oscuro de fondo)
+            glClearColor(0.08f, 0.09f, 0.12f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
 
-            //LOGICA Y RENDER
             update(deltaTime);
             render();
 
-            MouseListener.endFrame();
-
-            //Actualizar ventana
             window.update();
+            MouseListener.endFrame();
         }
     }
-    private void update(float dt){
-        //Movimientos de pj, crecimiento de planta y paso de tiempo
-        if (KeyListener.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE)) {
-            System.out.println("Espacio presionado! dt: " + dt);
-        }
-        if (MouseListener.mouseButtonDown(0)) {
-            System.out.println("Click en X: " + MouseListener.getX() + " | Y: " + MouseListener.getY());
-        }
+
+    private void update(float dt) {
+        // Aca van a actualizarse las escenas
     }
-    private void render(){
-        //aca se hacen los dibujos con OpenGL
+
+    private void render() {
+        // Aca van a dibujarse las escenas
     }
-    public static void main(String[] args){
-        //Punto de entrada de todoo el programa
-        Engine engine = new Engine();
-        engine.start();
+
+    private void cleanup() {
+        window.cleanup();
+    }
+
+    public static void main(String[] args) {
+        new Engine().start();
     }
 }
