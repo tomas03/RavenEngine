@@ -1,4 +1,12 @@
 package org.alchemistShop;
 
+import org.alchemistShop.scenes.*;
+import org.ravenEngine.core.Engine;
+
+
 public class Main {
+    public static void main(String[] args){
+        Engine engine = new Engine("Alchemist Shop",1280,720);
+        engine.start(new ShopScene());
+    }
 }
