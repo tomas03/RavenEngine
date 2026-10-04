@@ -85,4 +85,13 @@ public class Shader {
             throw new RuntimeException("Error al linkear Shader Program:\n" + glGetProgramInfoLog(programId, len));
         }
     }
+
+    public void uploadMat4f(String varName, org.joml.Matrix4f mat4) {
+        int varLocation = glGetUniformLocation(shaderProgramId, varName);
+        use();
+        java.nio.FloatBuffer matBuffer = org.lwjgl.BufferUtils.createFloatBuffer(16);
+        mat4.get(matBuffer);
+        glUniformMatrix4fv(varLocation, false, matBuffer);
+    }
+
 }

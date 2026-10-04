@@ -34,4 +34,8 @@ public class Camera {
         );
         return viewMatrix;
     }
+
+    public Matrix4f getProjectionMatrix() {
+        return projectionMatrix;
+    }
 }
