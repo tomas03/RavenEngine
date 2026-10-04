@@ -55,6 +55,12 @@ public class Shader {
         glDeleteProgram(shaderProgramId);
     }
 
+    public void uploadInt(String varName, int value) {
+        int varLocation = glGetUniformLocation(shaderProgramId, varName);
+        use();
+        glUniform1i(varLocation, value);
+    }
+
     private String loadResource(String path) {
         try (InputStream in = getClass().getResourceAsStream(path)) {
             if (in == null) {

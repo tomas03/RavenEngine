@@ -59,6 +59,10 @@ public class Window {
 
         //detectar placa de video y cargar las funciones de OpenGL
         GL.createCapabilities();
+
+        //Habilitar transparencias
+        glEnable(GL_BLEND);
+        glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     }
     public void update(){
         //intercambiar buffer de imagen

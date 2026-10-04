@@ -41,6 +41,20 @@
       <classifier>${lwjgl.natives}</classifier>
     </dependency>
 
+    <!--STB Image-->
+    <dependency >
+    <groupId>org.lwjgl</groupId >
+    <artifactId>lwjgl-stb</artifactId >
+    <version>${lwjgl.version}</version >
+    </dependency>
+    <dependency>
+    <groupId>org.lwjgl</groupId >
+    <artifactId>lwjgl-stb</artifactId >
+    <version>${lwjgl.version}</version >
+    <classifier>${lwjgl.natives}</classifier >
+    <scope>runtime</scope >
+    </dependency>
+
     <!-- OpenGL -->
     <dependency>
       <groupId>org.lwjgl</groupId>
