@@ -27,6 +27,7 @@ public class Engine {
     public static void changeScene(Scene newScene) {
         currentScene = newScene;
         currentScene.init(); // Arranca la carga de esa escena específica
+        currentScene.start();
     }
 
     private void runLoop() {
