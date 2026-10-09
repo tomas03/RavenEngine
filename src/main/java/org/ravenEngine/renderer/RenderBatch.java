@@ -132,6 +132,7 @@ public class RenderBatch {
         int offset = index * 4 * VERTEX_SIZE;
 
         Vector4f color = sprite.getColor();
+        Vector2f[] texCoords = sprite.getTexCoords();
 
         float texId = 0.0f;
         if (sprite.getTexture() != null) {
@@ -144,13 +145,13 @@ public class RenderBatch {
         float h = sprite.gameObject.transform.scale.y;
 
         // Vértice 0: Arriba Derecha
-        loadSingleVertex(offset, x + w, y + h, color, 1.0f, 1.0f, texId);
+        loadSingleVertex(offset, x + w, y + h, color, texCoords[0].x, texCoords[0].y, texId);
         // Vértice 1: Abajo Derecha
-        loadSingleVertex(offset + VERTEX_SIZE, x + w, y, color, 1.0f, 0.0f, texId);
+        loadSingleVertex(offset + VERTEX_SIZE, x + w, y, color, texCoords[1].x, texCoords[1].y, texId);
         // Vértice 2: Abajo Izquierda
-        loadSingleVertex(offset + (2 * VERTEX_SIZE), x, y, color, 0.0f, 0.0f, texId);
+        loadSingleVertex(offset + (2 * VERTEX_SIZE), x, y, color, texCoords[2].x, texCoords[2].y, texId);
         // Vértice 3: Arriba Izquierda
-        loadSingleVertex(offset + (3 * VERTEX_SIZE), x, y + h, color, 0.0f, 1.0f, texId);
+        loadSingleVertex(offset + (3 * VERTEX_SIZE), x, y + h, color, texCoords[3].x, texCoords[3].y, texId);
     }
 
     private void loadSingleVertex(int offset, float x, float y, Vector4f c, float u, float v, float texId) {

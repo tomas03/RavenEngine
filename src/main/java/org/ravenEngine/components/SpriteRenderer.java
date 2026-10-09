@@ -1,28 +1,30 @@
 package org.ravenEngine.components;
 
+import org.joml.Vector2f;
 import org.joml.Vector4f;
+import org.ravenEngine.renderer.Sprite;
 import org.ravenEngine.renderer.Texture;
 
 public class SpriteRenderer extends Component {
     private final Vector4f color;
-    private Texture texture;
+    private Sprite sprite;
 
-    // 1. Constructor para solo color plano
+    // Solo color plano
     public SpriteRenderer(Vector4f color) {
         this.color = color;
-        this.texture = null;
+        this.sprite = new Sprite(null);
     }
 
-    // 2. Constructor para solo textura (color blanco por defecto para no teñirla)
+    // Textura entera
     public SpriteRenderer(Texture texture) {
-        this.texture = texture;
+        this.sprite = new Sprite(texture);
         this.color = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
-    // 3. Constructor completo (textura + tinte de color)
-    public SpriteRenderer(Vector4f color, Texture texture) {
-        this.color = color;
-        this.texture = texture;
+    // Sprite recortado de un Spritesheet
+    public SpriteRenderer(Sprite sprite) {
+        this.sprite = sprite;
+        this.color = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
     public Vector4f getColor() {
@@ -30,10 +32,14 @@ public class SpriteRenderer extends Component {
     }
 
     public Texture getTexture() {
-        return texture;
+        return sprite.getTexture();
     }
 
-    public void setTexture(Texture texture) {
-        this.texture = texture;
+    public Vector2f[] getTexCoords() {
+        return sprite.getTexCoords();
+    }
+
+    public void setSprite(Sprite sprite) {
+        this.sprite = sprite;
     }
 }
