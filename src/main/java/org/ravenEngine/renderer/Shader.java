@@ -60,6 +60,11 @@ public class Shader {
         use();
         glUniform1i(varLocation, value);
     }
+    public void uploadIntArray(String varName, int[] array) {
+        int varLocation = glGetUniformLocation(shaderProgramId, varName);
+        use();
+        glUniform1iv(varLocation, array);
+    }
 
     private String loadResource(String path) {
         try (InputStream in = getClass().getResourceAsStream(path)) {

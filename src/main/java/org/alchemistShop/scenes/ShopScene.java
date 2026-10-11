@@ -1,128 +1,88 @@
 package org.alchemistShop.scenes;
 
+import org.alchemistShop.entities.PlayerController;
+import org.joml.Vector2f;
+import org.joml.Vector4f;
+import org.ravenEngine.components.CameraFollow;
+import org.ravenEngine.components.SpriteRenderer;
+import org.ravenEngine.components.Transform;
 import org.ravenEngine.io.KeyListener;
-import org.ravenEngine.renderer.Shader;
+import org.ravenEngine.renderer.Spritesheet;
 import org.ravenEngine.renderer.Texture;
+import org.ravenEngine.scene.GameObject;
 import org.ravenEngine.scene.Scene;
-import org.lwjgl.BufferUtils;
-
-import java.nio.FloatBuffer;
-import java.nio.IntBuffer;
 
 import static org.lwjgl.glfw.GLFW.*;
-import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL15.*;
-import static org.lwjgl.opengl.GL20.*;
-import static org.lwjgl.opengl.GL30.*;
 
 public class ShopScene extends Scene {
-    private Texture texture;
-    private Shader shader;
-    private int vaoId,vboId,eboId;
-
     @Override
     public void init() {
-        System.out.println("Cargando la tienda...");
-        shader = new Shader("/Shaders/default.vert","/Shaders/default.frag");
-        shader.compile();
+        Texture itemsAtlas = new Texture("/textures/items_alquimia.png");
 
-        texture = new Texture("/textures/Frasco.png");
+        // Calculamos el tamaño de cada celda: son 4 columnas y 2 filas
+        int tileWidth = itemsAtlas.getWidth() / 4;
+        int tileHeight = itemsAtlas.getHeight() / 2;
 
-        //crear cuadrado 64x64 en la posicion x=200, y=150
-        float x = 200.0f;
-        float y = 150.0f;
-        float size = 64.0f;
+        Spritesheet sheet = new Spritesheet(itemsAtlas, tileWidth, tileHeight, 8, 0);
 
-        // Vértices con: Posición (3), Color blanco neutro (4), Coordenadas UV (2)
-        float[] vertices = {
-                // Pos (X, Y, Z)          // Color (R, G, B, A)      // UV (U, V)
-                x + size, y + size, 0.0f,  1.0f, 1.0f, 1.0f, 1.0f,    1.0f, 1.0f, // Arriba der
-                x + size, y,        0.0f,  1.0f, 1.0f, 1.0f, 1.0f,    1.0f, 0.0f, // Abajo der
-                x,        y,        0.0f,  1.0f, 1.0f, 1.0f, 1.0f,    0.0f, 0.0f, // Abajo izq
-                x,        y + size, 0.0f,  1.0f, 1.0f, 1.0f, 1.0f,    0.0f, 1.0f  // Arriba izq
-        };
-        int[] indices={
-                0,1,3,
-                1,2,3
-        };
 
-        vaoId = glGenVertexArrays();
-        glBindVertexArray(vaoId);
+        //carga de textura de personaje
+        Texture playerAtlas = new Texture("/textures/Personaje.png");
 
-        FloatBuffer vertexBuffer = BufferUtils.createFloatBuffer(vertices.length);
-        vertexBuffer.put(vertices).flip();
+        Vector2f viewportSize = new Vector2f(640.0f,360.0f);
 
-        vboId = glGenBuffers();
-        glBindBuffer(GL_ARRAY_BUFFER, vboId);
-        glBufferData(GL_ARRAY_BUFFER,vertexBuffer,GL_STATIC_DRAW);
+        Spritesheet playerSheet = new Spritesheet(playerAtlas,32,32,12,0);
 
-        IntBuffer elementBuffer = BufferUtils.createIntBuffer(indices.length);
-        elementBuffer.put(indices).flip();
+        // --- FILA DE POCIONES ---
+        GameObject pocionRoja = new GameObject("PocionRoja", new Transform(new org.joml.Vector2f(100, 150), new org.joml.Vector2f(48, 48),1));
+        pocionRoja.addComponent(new SpriteRenderer(sheet.getSprite(0)));
+        this.addGameObjectToScene(pocionRoja);
 
-        eboId = glGenBuffers();
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, eboId);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, elementBuffer, GL_STATIC_DRAW);
+        GameObject vialVerde = new GameObject("VialVerde", new Transform(new org.joml.Vector2f(160, 150), new org.joml.Vector2f(48, 48),1));
+        vialVerde.addComponent(new SpriteRenderer(sheet.getSprite(1)));
+        this.addGameObjectToScene(vialVerde);
 
-        // Stride total: 9 floats (3 pos + 4 color + 2 UV)
-        int stride = (3 + 4 + 2) * Float.BYTES;
+        GameObject matrazAzul = new GameObject("MatrazAzul", new Transform(new org.joml.Vector2f(220, 150), new org.joml.Vector2f(48, 48),1));
+        matrazAzul.addComponent(new SpriteRenderer(sheet.getSprite(2)));
+        this.addGameObjectToScene(matrazAzul);
 
-        // 0: Posición (3 floats)
-        glVertexAttribPointer(0, 3, GL_FLOAT, false, stride, 0);
-        glEnableVertexAttribArray(0);
+        GameObject elixir = new GameObject("ElixirPurpura", new Transform(new org.joml.Vector2f(280, 150), new org.joml.Vector2f(48, 48),1));
+        elixir.addComponent(new SpriteRenderer(sheet.getSprite(3)));
+        this.addGameObjectToScene(elixir);
 
-        // 1: Color (4 floats)
-        glVertexAttribPointer(1, 4, GL_FLOAT, false, stride, 3 * Float.BYTES);
-        glEnableVertexAttribArray(1);
+        // --- FILA DE INGREDIENTES ---
+        GameObject hierbas = new GameObject("Hierbas", new Transform(new org.joml.Vector2f(100, 95), new org.joml.Vector2f(48, 48),1));
+        hierbas.addComponent(new SpriteRenderer(sheet.getSprite(4)));
+        this.addGameObjectToScene(hierbas);
 
-        // 2: Coordenadas UV (2 floats)
-        glVertexAttribPointer(2, 2, GL_FLOAT, false, stride, (3 + 4) * Float.BYTES);
-        glEnableVertexAttribArray(2);
+        GameObject raiz = new GameObject("Raiz", new Transform(new org.joml.Vector2f(160, 95), new org.joml.Vector2f(48, 48),1));
+        raiz.addComponent(new SpriteRenderer(sheet.getSprite(5)));
+        this.addGameObjectToScene(raiz);
 
-        glBindVertexArray(0);
-        glBindBuffer(GL_ARRAY_BUFFER, 0);
+        GameObject hongo = new GameObject("Hongo", new Transform(new org.joml.Vector2f(220, 95), new org.joml.Vector2f(48, 48),1));
+        hongo.addComponent(new SpriteRenderer(sheet.getSprite(6)));
+        this.addGameObjectToScene(hongo);
+
+        GameObject frascoVacio = new GameObject("FrascoVacio", new Transform(new org.joml.Vector2f(280, 95), new org.joml.Vector2f(48, 48),1));
+        frascoVacio.addComponent(new SpriteRenderer(sheet.getSprite(7)));
+        this.addGameObjectToScene(frascoVacio);
+
+        // Mostrador alargado abajo
+        GameObject mostrador = new GameObject("Mostrador", new Transform(new org.joml.Vector2f(80, 50), new org.joml.Vector2f(260, 45),2));
+        mostrador.addComponent(new SpriteRenderer(new org.joml.Vector4f(0.45f, 0.25f, 0.1f, 1.0f)));
+        this.addGameObjectToScene(mostrador);
+
+        //crear GO del pj
+        GameObject jugador = new GameObject("RavenTom",new Transform(new org.joml.Vector2f(360,95),new org.joml.Vector2f(48,54),1));
+        jugador.addComponent(new SpriteRenderer(playerSheet.getSprite(0)));
+        jugador.addComponent(new PlayerController(playerSheet));
+        jugador.addComponent(new CameraFollow(this.camera,viewportSize,6.0f));
+
+        this.addGameObjectToScene(jugador);
     }
 
     @Override
     public void update(float dt) {
-        float cameraSpeed = 250.0f;
-
-        if (KeyListener.isKeyPressed(GLFW_KEY_W)){
-            camera.position.y -= cameraSpeed*dt;
-        }
-        if (KeyListener.isKeyPressed(GLFW_KEY_S)) {
-            camera.position.y += cameraSpeed * dt;
-        }
-        if (KeyListener.isKeyPressed(GLFW_KEY_D)) {
-            camera.position.x -= cameraSpeed * dt;
-        }
-        if (KeyListener.isKeyPressed(GLFW_KEY_A)) {
-            camera.position.x += cameraSpeed * dt;
-        }
-        // Testigo: imprime la posición solo si te estás moviendo
-        if (KeyListener.isKeyPressed(GLFW_KEY_W) || KeyListener.isKeyPressed(GLFW_KEY_S) ||
-                KeyListener.isKeyPressed(GLFW_KEY_D) || KeyListener.isKeyPressed(GLFW_KEY_A)) {
-            System.out.printf("Camara -> X: %.2f | Y: %.2f%n", camera.position.x, camera.position.y);
-        }
-    }
-
-    @Override
-    public void render() {
-        shader.use();
-
-        //insertar matrices de la camara al shader
-        shader.uploadMat4f("uProjection",camera.getProjectionMatrix());
-        shader.uploadMat4f("uView",camera.getViewMatrix());
-
-        // Activamos y vinculamos la textura en el slot 0
-        glActiveTexture(GL_TEXTURE0);
-        texture.bind();
-        shader.uploadInt("uTexture", 0);
-
-        glBindVertexArray(vaoId);
-        glDrawElements(GL_TRIANGLES,6,GL_UNSIGNED_INT,0);
-        glBindVertexArray(0);
-
-        texture.unbind();
-        shader.detach();
+        super.update(dt);
     }
 }

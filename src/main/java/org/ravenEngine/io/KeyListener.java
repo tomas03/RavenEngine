@@ -19,7 +19,6 @@ public class KeyListener {
 
     //Callback nativo que llama GLFW ante cada tecla
     public static void keyCallback(long window, int key, int scancode, int action, int mods){
-        System.out.println("Tecla detectada por GLFW: " + key + " accion: " + action);
         if(key>=0 && key< get().keyPressed.length){
             if(action == GLFW_PRESS){
                 get().keyPressed[key] = true;
