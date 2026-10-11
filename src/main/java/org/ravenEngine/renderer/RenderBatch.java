@@ -11,14 +11,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.lwjgl.opengl.GL11.*;
-import static org.lwjgl.opengl.GL13.GL_TEXTURE0;
-import static org.lwjgl.opengl.GL13.glActiveTexture;
+import static org.lwjgl.opengl.GL13.*;
 import static org.lwjgl.opengl.GL15.*;
 import static org.lwjgl.opengl.GL20.*;
 import static org.lwjgl.opengl.GL30.*;
 
 public class RenderBatch {
-    // Pos (2), Color (4), UV (2), TexId (1) = 9 floats
     private static final int POS_SIZE = 2;
     private static final int COLOR_SIZE = 4;
     private static final int TEX_COORDS_SIZE = 2;
@@ -62,19 +60,15 @@ public class RenderBatch {
         eboBuffer.put(indices).flip();
         glBufferData(GL_ELEMENT_ARRAY_BUFFER, eboBuffer, GL_STATIC_DRAW);
 
-        // 0: Pos (2)
         glVertexAttribPointer(0, POS_SIZE, GL_FLOAT, false, VERTEX_SIZE_BYTES, 0);
         glEnableVertexAttribArray(0);
 
-        // 1: Color (4)
         glVertexAttribPointer(1, COLOR_SIZE, GL_FLOAT, false, VERTEX_SIZE_BYTES, (long) POS_SIZE * Float.BYTES);
         glEnableVertexAttribArray(1);
 
-        // 2: UVs (2)
         glVertexAttribPointer(2, TEX_COORDS_SIZE, GL_FLOAT, false, VERTEX_SIZE_BYTES, (long) (POS_SIZE + COLOR_SIZE) * Float.BYTES);
         glEnableVertexAttribArray(2);
 
-        // 3: TexId (1)
         glVertexAttribPointer(3, TEX_ID_SIZE, GL_FLOAT, false, VERTEX_SIZE_BYTES, (long) (POS_SIZE + COLOR_SIZE + TEX_COORDS_SIZE) * Float.BYTES);
         glEnableVertexAttribArray(3);
 
@@ -86,8 +80,10 @@ public class RenderBatch {
         this.sprites[index] = spr;
         this.numSprites++;
 
-        if (spr.getTexture() != null && !textures.contains(spr.getTexture())) {
-            textures.add(spr.getTexture());
+        if (spr.getTexture() != null) {
+            if (!textures.contains(spr.getTexture())) {
+                textures.add(spr.getTexture());
+            }
         }
 
         loadVertexProperties(index);
@@ -98,6 +94,10 @@ public class RenderBatch {
     }
 
     public void render(Camera camera) {
+        // 1. Y-Sorting: Ordenamos los sprites activos por zIndex y luego por posición Y
+        sortSprites();
+
+        // 2. Regenerar los vértices con el orden correcto
         for (int i = 0; i < numSprites; i++) {
             loadVertexProperties(i);
         }
@@ -115,7 +115,9 @@ public class RenderBatch {
             glActiveTexture(GL_TEXTURE0 + i);
             textures.get(i).bind();
         }
-        shader.uploadInt("uTexture", 0);
+
+        int[] slots = new int[]{0, 1, 2, 3, 4, 5, 6, 7};
+        shader.uploadIntArray("uTextures", slots);
 
         glBindVertexArray(vaoID);
         glDrawElements(GL_TRIANGLES, this.numSprites * 6, GL_UNSIGNED_INT, 0);
@@ -134,9 +136,15 @@ public class RenderBatch {
         Vector4f color = sprite.getColor();
         Vector2f[] texCoords = sprite.getTexCoords();
 
+        // Buscamos cuál es el slot de esta textura (+1 porque 0 es color plano)
         float texId = 0.0f;
         if (sprite.getTexture() != null) {
-            texId = 1.0f;
+            for (int i = 0; i < textures.size(); i++) {
+                if (textures.get(i).equals(sprite.getTexture())) {
+                    texId = i + 1;
+                    break;
+                }
+            }
         }
 
         float x = sprite.gameObject.transform.pos.x;
@@ -144,13 +152,9 @@ public class RenderBatch {
         float w = sprite.gameObject.transform.scale.x;
         float h = sprite.gameObject.transform.scale.y;
 
-        // Vértice 0: Arriba Derecha
         loadSingleVertex(offset, x + w, y + h, color, texCoords[0].x, texCoords[0].y, texId);
-        // Vértice 1: Abajo Derecha
         loadSingleVertex(offset + VERTEX_SIZE, x + w, y, color, texCoords[1].x, texCoords[1].y, texId);
-        // Vértice 2: Abajo Izquierda
         loadSingleVertex(offset + (2 * VERTEX_SIZE), x, y, color, texCoords[2].x, texCoords[2].y, texId);
-        // Vértice 3: Arriba Izquierda
         loadSingleVertex(offset + (3 * VERTEX_SIZE), x, y + h, color, texCoords[3].x, texCoords[3].y, texId);
     }
 
@@ -172,7 +176,6 @@ public class RenderBatch {
             int offsetArrayIndex = 6 * i;
             int offset = 4 * i;
 
-            // 3, 2, 0  -  0, 2, 1 (sentido antihorario estándar)
             elements[offsetArrayIndex] = offset + 0;
             elements[offsetArrayIndex + 1] = offset + 1;
             elements[offsetArrayIndex + 2] = offset + 3;
@@ -183,8 +186,47 @@ public class RenderBatch {
         }
         return elements;
     }
+    private void sortSprites() {
+        // Ordenamiento burbuja o inserción simple para el array de sprites activos
+        // (Insertion Sort es óptimo acá porque de frame a frame la lista ya está casi ordenada)
+        for (int i = 1; i < numSprites; i++) {
+            SpriteRenderer key = sprites[i];
+            int j = i - 1;
+
+            while (j >= 0 && compareSprites(sprites[j], key) > 0) {
+                sprites[j + 1] = sprites[j];
+                j = j - 1;
+            }
+            sprites[j + 1] = key;
+        }
+    }
+
+    private int compareSprites(SpriteRenderer a, SpriteRenderer b) {
+        int zA = a.gameObject.transform.zIndex;
+        int zB = b.gameObject.transform.zIndex;
+
+        if (zA != zB) {
+            return Integer.compare(zA, zB);
+        }
+
+        // Si están en la misma capa zIndex, aplicamos Y-Sorting:
+        // El que tenga MAYOR Y está más arriba/lejos, por ende va primero (menor índice de dibujo)
+        // El que tenga MENOR Y está más abajo/cerca, por ende va después (tapa al de arriba)
+        float yA = a.gameObject.transform.pos.y;
+        float yB = b.gameObject.transform.pos.y;
+
+        return Float.compare(yB, yA);
+    }
 
     public boolean hasRoom() {
         return this.hasRoom;
+    }
+
+    public boolean hasTextureRoom() {
+        return this.textures.size() < 8;
+    }
+
+    public boolean hasTexture(Texture tex) {
+        return this.textures.contains(tex);
     }
 }

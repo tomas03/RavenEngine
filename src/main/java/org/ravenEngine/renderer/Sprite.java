@@ -25,4 +25,14 @@ public class Sprite {
     public Vector2f[] getTexCoords() {return texCoords;}
 
     public void setTexCoords(Vector2f[] texCoords) {this.texCoords = texCoords;}
+    // Invierte las coordenadas UV horizontales para espejar el sprite
+    public Sprite getFlippedX() {
+        Vector2f[] flipped = new Vector2f[]{
+                new Vector2f(texCoords[2].x, texCoords[0].y), // Arriba Derecha toma la X izquierda
+                new Vector2f(texCoords[2].x, texCoords[1].y), // Abajo Derecha toma la X izquierda
+                new Vector2f(texCoords[0].x, texCoords[2].y), // Abajo Izquierda toma la X derecha
+                new Vector2f(texCoords[0].x, texCoords[3].y)  // Arriba Izquierda toma la X derecha
+        };
+        return new Sprite(this.texture, flipped);
+    }
 }

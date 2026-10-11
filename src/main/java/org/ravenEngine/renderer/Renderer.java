@@ -23,17 +23,21 @@ public class Renderer {
             add(spr);
         }
     }
-    public void add(SpriteRenderer spr){
+    private void add(SpriteRenderer spr) {
         boolean added = false;
-        for (RenderBatch batch : batches){
-            if (batch.hasRoom()){
-                batch.addSprite(spr);
-                added = true;
-                break;
+        for (RenderBatch batch : batches) {
+            if (batch.hasRoom()) {
+                Texture tex = spr.getTexture();
+                if (tex == null || (batch.hasTexture(tex) || batch.hasTextureRoom())) {
+                    batch.addSprite(spr);
+                    added = true;
+                    break;
+                }
             }
         }
-        if (!added){
-            RenderBatch newBatch = new RenderBatch(MAX_BATCH_SIZE,defaultShader);
+
+        if (!added) {
+            RenderBatch newBatch = new RenderBatch(MAX_BATCH_SIZE, defaultShader);
             newBatch.start();
             batches.add(newBatch);
             newBatch.addSprite(spr);
