@@ -30,6 +30,11 @@ public class GameObject {
         c.gameObject = this;
         this.components.add(c);
     }
+
+    public List< Component > getAllComponents() {
+        return this.components;
+    }
+
     public void start(){
         for (Component component : components){
             component.start();

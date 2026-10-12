@@ -4,6 +4,7 @@ import org.joml.Vector2f;
 import org.joml.Vector4f;
 import org.ravenEngine.components.SpriteRenderer;
 import org.lwjgl.BufferUtils;
+import org.ravenEngine.util.AssetPool;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -35,7 +36,8 @@ public class RenderBatch {
     private final Shader shader;
 
     public RenderBatch(int maxBatchSize, Shader shader) {
-        this.shader = shader;
+        // Pedimos la instancia cacheada al AssetPool
+        this.shader = AssetPool.getShader("/Shaders/default.vert", "/Shaders/default.frag");
         this.sprites = new SpriteRenderer[maxBatchSize];
         this.maxBatchSize = maxBatchSize;
 

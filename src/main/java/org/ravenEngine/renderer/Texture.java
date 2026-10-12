@@ -13,7 +13,7 @@ import static org.lwjgl.stb.STBImage.*;
 
 public class Texture {
     private final String filepath;
-    private final int textureId;
+    private int textureId;
     private int width;
     private int height;
 
@@ -90,5 +90,12 @@ public class Texture {
 
     public int getHeight() {
         return height;
+    }
+
+    public void destroy(){
+        if (this.textureId != 0){
+            glDeleteTextures(this.textureId);
+            this.textureId = 0;
+        }
     }
 }

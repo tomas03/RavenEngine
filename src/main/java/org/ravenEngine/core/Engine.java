@@ -30,6 +30,10 @@ public class Engine {
         currentScene.start();
     }
 
+    public static Scene getCurrentScene(){
+        return currentScene;
+    }
+
     private void runLoop() {
         double lastFrameTime = glfwGetTime();
 
