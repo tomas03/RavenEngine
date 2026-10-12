@@ -15,66 +15,76 @@ public class Window {
     private int height;
     private Long windowHandle;
 
+    // Control de FPS
+    private double lastTime = 0.0;
+    private int frameCount = 0;
+
     public Window(String title, int width, int height) {
         this.title = title;
         this.width = width;
         this.height = height;
     }
-    public void init(){
-        //Redirección de los errores nativos de C a la consola de Java
+
+    public void init() {
         GLFWErrorCallback.createPrint(System.err).set();
-        //iniciar Libreria GLFW
-        if(!glfwInit()){
+
+        if (!glfwInit()) {
             throw new IllegalStateException("No se pudo incializar GLFW");
         }
 
-        //Reglas de creacion de ventana
         glfwDefaultWindowHints();
-        glfwWindowHint(GLFW_VISIBLE,GLFW_FALSE);//va a estar oculta hasta que termine de cargar todoo
-        glfwWindowHint(GLFW_RESIZABLE,GLFW_TRUE);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
-        glfwWindowHint(GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);//Usar openGL moderno
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-        //Creacion de ventana y guardado de puntero
-        windowHandle = glfwCreateWindow(width,height,title,NULL,NULL);
-        if(windowHandle == NULL){
+        windowHandle = glfwCreateWindow(width, height, title, NULL, NULL);
+        if (windowHandle == NULL) {
             throw new RuntimeException("Fallo al crear la ventana de GLFW");
         }
 
-        // Registrar callbacks de inputs
         glfwSetCursorPosCallback(windowHandle, MouseListener::mousePosCallback);
         glfwSetMouseButtonCallback(windowHandle, MouseListener::mouseButtonCallback);
         glfwSetScrollCallback(windowHandle, MouseListener::mouseScrollCallback);
         glfwSetKeyCallback(windowHandle, KeyListener::keyCallback);
 
-        //unir ventana a hilo de ejecución
         glfwMakeContextCurrent(windowHandle);
 
-        //Activar VSync
+        // VSync activado (topeado a la tasa de refresco del monitor)
         glfwSwapInterval(1);
 
-        //Mostrar ventana
         glfwShowWindow(windowHandle);
 
-        //detectar placa de video y cargar las funciones de OpenGL
         GL.createCapabilities();
 
-        //Habilitar transparencias
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // Guardamos el tiempo de inicio
+        lastTime = glfwGetTime();
     }
-    public void update(){
-        //intercambiar buffer de imagen
+
+    public void update() {
         glfwSwapBuffers(windowHandle);
-        //Leemos los inputs
         glfwPollEvents();
+
+        // Acumulamos frames y medimos cada 0.25 segundos
+        frameCount++;
+        double currentTime = glfwGetTime();
+        if (currentTime - lastTime >= 0.25) {
+            int fps = (int) (frameCount / (currentTime - lastTime));
+            glfwSetWindowTitle(windowHandle, title + " | FPS: " + fps);
+            frameCount = 0;
+            lastTime = currentTime;
+        }
     }
-    public boolean shouldClose(){
+
+    public boolean shouldClose() {
         return glfwWindowShouldClose(windowHandle);
     }
-    public void cleanup(){
-        //rompemos todoo pero prolijo al salir
+
+    public void cleanup() {
         glfwDestroyWindow(windowHandle);
         glfwTerminate();
     }

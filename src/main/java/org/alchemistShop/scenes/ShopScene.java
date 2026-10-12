@@ -17,6 +17,7 @@ import static org.lwjgl.glfw.GLFW.*;
 public class ShopScene extends Scene {
     @Override
     public void init() {
+
         Texture itemsAtlas = new Texture("/textures/items_alquimia.png");
 
         // Calculamos el tamaño de cada celda: son 4 columnas y 2 filas

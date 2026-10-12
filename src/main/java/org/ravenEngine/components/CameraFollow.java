@@ -9,6 +9,11 @@ public class CameraFollow extends Component{
     private final Vector2f viewportSize;
     private float smoothSpeed = 5.0f;// que tan rapido acompaña mientras mas alto mas reactivo
 
+    private float minX = 0.0f;
+    private float maxX = 640.0f;
+    private float minY = 0.0f;
+    private float maxY = 360.0f;
+
     public CameraFollow(Camera camera, Vector2f viewportSize) {
         this.camera = camera;
         this.viewportSize = viewportSize;
