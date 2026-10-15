@@ -17,7 +17,7 @@ public class DebugDraw {
     private static final int MAX_LINES = 500;
     private static final List<Line2D> lines = new ArrayList<>();
 
-    //6 floats por vértice: 2pos(x,y) 3 color(r,g,b) 5 floats * 2 vertices
+    //6 floats por vértice: 2 pos(x,y) 3 color(r,g,b) 5 floats * 2 vertices
     private static final float[] vertexArray = new float[MAX_LINES*10];
     private static Shader shader;
 
@@ -53,7 +53,7 @@ public class DebugDraw {
             start();
         }
 
-        //eliminar lineas cuyo lifetime expiró
+        //eliminar líneas cuyo lifetime expiró
         for (int i = 0;i<lines.size();i++){
             if (lines.get(i).beginFrame()<0){
                 lines.remove(i);
@@ -75,7 +75,7 @@ public class DebugDraw {
                 Vector2f position = (i == 0) ? line.getFrom() : line.getTo();
                 Vector3f color = line.getColor();
 
-                vertexArray[index]     = position.x;
+                vertexArray[index]= position.x;
                 vertexArray[index + 1] = position.y;
                 vertexArray[index + 2] = color.x;
                 vertexArray[index + 3] = color.y;
@@ -98,7 +98,7 @@ public class DebugDraw {
         shader.detach();
     }
 
-    //METODOS PUBLICOS DE DIBUJADO
+    //MÉTODOS PÚBLICOS DE DIBUJADO
     public static void addLine2D(Vector2f from, Vector2f to, Vector3f color, int lifetime) {
         if (lines.size() >= MAX_LINES) return;
         lines.add(new Line2D(new Vector2f(from), new Vector2f(to), new Vector3f(color), lifetime));

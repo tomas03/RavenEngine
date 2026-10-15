@@ -2,9 +2,10 @@ package org.ravenEngine.components;
 
 import org.joml.Vector2f;
 import org.ravenEngine.renderer.Camera;
+import org.ravenEngine.scene.Component;
 import org.ravenEngine.util.MathUtils;
 
-public class CameraFollow extends Component{
+public class CameraFollow extends Component {
     private final Camera camera;
     private final Vector2f viewportSize;
     private float smoothSpeed = 5.0f;// que tan rapido acompaña mientras mas alto mas reactivo

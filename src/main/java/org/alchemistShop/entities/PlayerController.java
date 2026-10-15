@@ -1,130 +1,79 @@
 package org.alchemistShop.entities;
 
-import org.ravenEngine.components.Animation;
-import org.ravenEngine.components.BoxCollider2D;
-import org.ravenEngine.components.Component;
-import org.ravenEngine.components.SpriteRenderer;
-import org.ravenEngine.core.Engine;
+import org.ravenEngine.components.SpriteAnimator;
 import org.ravenEngine.io.KeyListener;
-import org.ravenEngine.renderer.Spritesheet;
+import org.ravenEngine.scene.Component;
 import org.ravenEngine.scene.GameObject;
-
-
-import java.util.Arrays;
-import java.util.List;
 
 import static org.lwjgl.glfw.GLFW.*;
 
-
-public class PlayerController  extends Component {
+public class PlayerController extends Component {
     private final float speed = 150.0f;
-    private SpriteRenderer spr;
-    //traer animaciones
-    private Animation walkUp;
-    private Animation walkDown;
-    private Animation walkLeft;
-    private Animation walkRight;
+    private SpriteAnimator animator;
+    private String lastDirection = "down";
 
-    private final Spritesheet sheet;
-    private Animation currentAnim;
-
-    private BoxCollider2D boxCollider;
-
-    public PlayerController(Spritesheet sheet) {
-        this.sheet = sheet;
+    public PlayerController() {
+        // Ya no necesita recibir el Spritesheet por constructor
     }
 
     @Override
-    public void start(){
-        this.spr = gameObject.getComponent(SpriteRenderer.class);
-
-        this.boxCollider = gameObject.getComponent(BoxCollider2D.class);
-
-        // Fila 0 (arriba): Frente
-        this.walkDown = new Animation(Arrays.asList(
-                sheet.getSprite(0),
-                sheet.getSprite(1),
-                sheet.getSprite(2)), 0.15f);
-
-        // Fila 1: Derecha
-        this.walkRight = new Animation(Arrays.asList(
-                sheet.getSprite(6),
-                sheet.getSprite(7),
-                sheet.getSprite(8)), 0.15f);
-
-        // Izquierda: Espejamos la fila de la derecha con getFlippedX()
-        this.walkLeft = new Animation(Arrays.asList(
-                sheet.getSprite(3),
-                sheet.getSprite(4),
-                sheet.getSprite(5)), 0.15f);
-
-        // Fila 3 (abajo en el png): Espalda / Arriba (sprites 12, 13, 14, 15)
-        this.walkUp = new Animation(Arrays.asList(
-                sheet.getSprite(9),
-                sheet.getSprite(10),
-                sheet.getSprite(11)), 0.15f);
-
-        this.currentAnim = walkDown;
+    public void start() {
+        // Obtenemos el animador que configuramos en ShopScene
+        this.animator = gameObject.getComponent(SpriteAnimator.class);
     }
 
-    private boolean checkCollision(){
-        if (this.boxCollider == null) return false;
-        List<BoxCollider2D> colliders = Engine.getCurrentScene().getColliders();
-        for (BoxCollider2D other:colliders){
-            //no colisionar contra uno mismo
-            if (other == this.boxCollider) continue;
-            if (this.boxCollider.isTrigger()){
-                return true;
+    @Override
+    public void update(float dt) {
+        float dx = 0.0f;
+        float dy = 0.0f;
+
+        // EJE Y
+        if (KeyListener.isKeyPressed(GLFW_KEY_W) || KeyListener.isKeyPressed(GLFW_KEY_UP)) {
+            dy += 1.0f;
+        }
+        if (KeyListener.isKeyPressed(GLFW_KEY_S) || KeyListener.isKeyPressed(GLFW_KEY_DOWN)) {
+            dy -= 1.0f;
+        }
+
+        // EJE X
+        if (KeyListener.isKeyPressed(GLFW_KEY_D) || KeyListener.isKeyPressed(GLFW_KEY_RIGHT)) {
+            dx += 1.0f;
+        }
+        if (KeyListener.isKeyPressed(GLFW_KEY_A) || KeyListener.isKeyPressed(GLFW_KEY_LEFT)) {
+            dx -= 1.0f;
+        }
+
+        boolean moving = (dx != 0.0f || dy != 0.0f);
+
+        if (moving) {
+            // Aplicamos movimiento (Scene se encarga de frenarlo si choca contra un objeto sólido)
+            gameObject.transform.pos.x += dx * speed * dt;
+            gameObject.transform.pos.y += dy * speed * dt;
+
+            // Selección de animación según dirección
+            if (animator != null) {
+                if (dy > 0) {
+                    animator.play("walk_up");
+                    lastDirection = "up";
+                } else if (dy < 0) {
+                    animator.play("walk_down");
+                    lastDirection = "down";
+                } else if (dx < 0) {
+                    animator.play("walk_left");
+                    lastDirection = "left";
+                } else if (dx > 0) {
+                    animator.play("walk_right");
+                    lastDirection = "right";
+                }
+            }
+        } else {
+            // Reposo mirando en la última dirección que caminó
+            if (animator != null) {
+                animator.play("idle_" + lastDirection);
             }
         }
-        return false;
     }
 
-    @Override
-    public void update(float dt){
-        boolean moving = false;
-
-        //EJE Y
-        float prevY = gameObject.transform.pos.y;
-        if (KeyListener.isKeyPressed(GLFW_KEY_W)|| KeyListener.isKeyPressed(GLFW_KEY_UP)){
-            gameObject.transform.pos.y += speed*dt;
-            currentAnim = walkUp;
-            moving = true;
-        } else if (KeyListener.isKeyPressed(GLFW_KEY_S)|| KeyListener.isKeyPressed(GLFW_KEY_DOWN)) {
-            gameObject.transform.pos.y -= speed*dt;
-            currentAnim = walkDown;
-            moving = true;
-        }
-        //si chocas en Y volves al paso anterior
-        if (checkCollision()){
-            gameObject.transform.pos.y = prevY;
-        }
-
-        //EJE X
-        float prevX = gameObject.transform.pos.x;
-        if (KeyListener.isKeyPressed(GLFW_KEY_D)||KeyListener.isKeyPressed(GLFW_KEY_RIGHT)){
-            gameObject.transform.pos.x += speed*dt;
-            currentAnim = walkRight;
-            moving = true;
-        }else if(KeyListener.isKeyPressed(GLFW_KEY_A)||KeyListener.isKeyPressed(GLFW_KEY_LEFT)){
-            gameObject.transform.pos.x -= speed*dt;
-            currentAnim = walkLeft;
-            moving = true;
-        }
-        //si chocas en X volves al paso anterior
-        if (checkCollision()){
-            gameObject.transform.pos.x = prevX;
-        }
-
-        //ANIMACIONES
-        if (moving){
-            currentAnim.update(dt);
-            spr.setSprite(currentAnim.getCurrentSprite());
-        }else {
-            currentAnim.reset();
-            spr.setSprite(currentAnim.getCurrentSprite());
-        }
-    }
     @Override
     public void onCollisionEnter(GameObject other) {
         System.out.println("¡CRASH! El mago chocó contra: " + other.getName());

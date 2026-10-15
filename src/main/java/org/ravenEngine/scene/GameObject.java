@@ -1,6 +1,5 @@
 package org.ravenEngine.scene;
 
-import org.ravenEngine.components.Component;
 import org.ravenEngine.components.Transform;
 
 import java.util.ArrayList;
@@ -47,4 +46,5 @@ public class GameObject {
     }
 
     public String getName(){return name;}
+
 }

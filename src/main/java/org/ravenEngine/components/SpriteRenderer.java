@@ -4,6 +4,7 @@ import org.joml.Vector2f;
 import org.joml.Vector4f;
 import org.ravenEngine.renderer.Sprite;
 import org.ravenEngine.renderer.Texture;
+import org.ravenEngine.scene.Component;
 
 public class SpriteRenderer extends Component {
     private final Vector4f color;

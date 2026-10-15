@@ -3,7 +3,7 @@ package org.ravenEngine.components;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.ravenEngine.renderer.DebugDraw;
-import org.ravenEngine.components.Component;
+import org.ravenEngine.scene.Component;
 
 public class BoxCollider2D extends Component {
     private Vector2f size;
@@ -16,7 +16,7 @@ public class BoxCollider2D extends Component {
     private static final Vector3f TRIGGER_COLOR = new Vector3f(1.0f, 0.85f, 0.0f);
 
     public BoxCollider2D(Vector2f size) {
-        this(size, new Vector2f(0.0f, 0.0f), false,false);
+        this(size, new Vector2f(0.0f, 0.0f), true,false);
     }
 
     public BoxCollider2D(Vector2f size, Vector2f offset) {
@@ -43,7 +43,6 @@ public class BoxCollider2D extends Component {
     public boolean isTrigger() {
         return isTrigger;
     }
-
     public void setTrigger(boolean trigger) {
         this.isTrigger = trigger;
     }

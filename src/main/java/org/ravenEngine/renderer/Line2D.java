@@ -8,6 +8,7 @@ public class Line2D {
     private Vector2f to;
     private Vector3f color;
     private int lifetime;
+    
 
     public Line2D(Vector2f from, Vector2f to, Vector3f color, int lifetime) {
         this.from = from;
@@ -26,4 +27,16 @@ public class Line2D {
     public Vector2f getTo() {return to;}
 
     public Vector3f getColor() {return color;}
+
+    public void setFrom(Vector2f from) {
+        this.from = from;
+    }
+
+    public void setTo(Vector2f to) {
+        this.to = to;
+    }
+
+    public void setColor(Vector3f color) {
+        this.color = color;
+    }
 }

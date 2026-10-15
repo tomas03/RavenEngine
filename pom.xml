@@ -12,6 +12,7 @@
     <lwjgl.version>3.3.3</lwjgl.version>
     <lwjgl.natives>natives-linux</lwjgl.natives>
     <joml.version>1.10.5</joml.version>
+    <imgui.version>1.86.11</imgui.version>
   </properties>
   <dependencies>
 
@@ -71,6 +72,32 @@
       <groupId>org.joml</groupId>
       <artifactId>joml</artifactId>
       <version>${joml.version}</version>
+    </dependency>
+
+    <!-- ImGui Java Binding -->
+    <dependency>
+      <groupId>io.github.spair</groupId>
+      <artifactId>imgui-java-binding</artifactId>
+      <version>${imgui.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>io.github.spair</groupId>
+      <artifactId>imgui-java-lwjgl3</artifactId>
+      <version>${imgui.version}</version>
+    </dependency>
+
+    <!-- Nativos para Linux y Windows -->
+    <dependency>
+      <groupId>io.github.spair</groupId>
+      <artifactId>imgui-java-natives-linux</artifactId>
+      <version>${imgui.version}</version>
+      <scope>runtime</scope>
+    </dependency>
+    <dependency>
+      <groupId>io.github.spair</groupId>
+      <artifactId>imgui-java-natives-windows</artifactId>
+      <version>${imgui.version}</version>
+      <scope>runtime</scope>
     </dependency>
   </dependencies>
 

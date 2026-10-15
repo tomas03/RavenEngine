@@ -1,6 +1,4 @@
-package org.ravenEngine.components;
-
-import org.ravenEngine.scene.GameObject;
+package org.ravenEngine.scene;
 
 public class Component {
     public GameObject gameObject = null;

@@ -2,21 +2,13 @@ package org.alchemistShop.scenes;
 
 import org.alchemistShop.entities.PlayerController;
 import org.joml.Vector2f;
-import org.joml.Vector4f;
-import org.ravenEngine.components.BoxCollider2D;
-import org.ravenEngine.components.CameraFollow;
-import org.ravenEngine.components.SpriteRenderer;
-import org.ravenEngine.components.Transform;
-import org.ravenEngine.io.KeyListener;
+import org.ravenEngine.components.*;
 import org.ravenEngine.renderer.Spritesheet;
 import org.ravenEngine.renderer.Texture;
+import org.ravenEngine.renderer.animation.Animation;
 import org.ravenEngine.scene.GameObject;
 import org.ravenEngine.scene.Scene;
 import org.ravenEngine.util.AssetPool;
-
-import java.util.Vector;
-
-import static org.lwjgl.glfw.GLFW.*;
 
 public class ShopScene extends Scene {
     @Override
@@ -84,15 +76,71 @@ public class ShopScene extends Scene {
         mostrador.addComponent(mostradorCollider);
         this.addGameObjectToScene(mostrador);
 
-        //crear GO del pj
-        GameObject jugador = new GameObject("RavenTom",new Transform(new org.joml.Vector2f(360,95),new org.joml.Vector2f(48,54),1));
-        jugador.addComponent(new SpriteRenderer(playerSprites.getSprite(0)));
-        jugador.addComponent(new PlayerController(playerSprites));
-        jugador.addComponent(new CameraFollow(this.camera,viewportSize,6.0f));
-        //COLISIONES
-        Vector2f playerColliderSize = new Vector2f(24.0f,34.0f);
-        Vector2f playerColliderOffset = new Vector2f(12.0f,12.0f);
-        jugador.addComponent(new BoxCollider2D(playerColliderSize,playerColliderOffset));
+        // --- CREAR GO DEL PJ ---
+        GameObject jugador = new GameObject("RavenTom", new Transform(new org.joml.Vector2f(360, 95), new org.joml.Vector2f(48, 54), 1));
+        jugador.addComponent(new SpriteRenderer(playerSprites.getSprite(1))); // Frame quieto mirando al frente
+
+        // --- SISTEMA DE ANIMACIONES (3 frames por ciclo según tu spritesheet) ---
+        SpriteAnimator animator = new SpriteAnimator();
+        float frameTime = 0.15f; // Velocidad del paso
+
+        // Caminar hacia abajo (sprites 0, 1, 2)
+        Animation walkDown = new Animation("walk_down", true);
+        walkDown.addFrame(playerSprites.getSprite(0), frameTime);
+        walkDown.addFrame(playerSprites.getSprite(1), frameTime);
+        walkDown.addFrame(playerSprites.getSprite(2), frameTime);
+        animator.addAnimation(walkDown);
+
+        // Caminar hacia la izquierda (sprites 3, 4, 5)
+        Animation walkLeft = new Animation("walk_left", true);
+        walkLeft.addFrame(playerSprites.getSprite(3), frameTime);
+        walkLeft.addFrame(playerSprites.getSprite(4), frameTime);
+        walkLeft.addFrame(playerSprites.getSprite(5), frameTime);
+        animator.addAnimation(walkLeft);
+
+        // Caminar hacia la derecha (sprites 6, 7, 8)
+        Animation walkRight = new Animation("walk_right", true);
+        walkRight.addFrame(playerSprites.getSprite(6), frameTime);
+        walkRight.addFrame(playerSprites.getSprite(7), frameTime);
+        walkRight.addFrame(playerSprites.getSprite(8), frameTime);
+        animator.addAnimation(walkRight);
+
+        // Caminar hacia arriba (sprites 9, 10, 11)
+        Animation walkUp = new Animation("walk_up", true);
+        walkUp.addFrame(playerSprites.getSprite(9), frameTime);
+        walkUp.addFrame(playerSprites.getSprite(10), frameTime);
+        walkUp.addFrame(playerSprites.getSprite(11), frameTime);
+        animator.addAnimation(walkUp);
+
+        // --- IDLE (Cuadro en reposo según la última dirección) ---
+        Animation idleDown = new Animation("idle_down", true);
+        idleDown.addFrame(playerSprites.getSprite(1), 1.0f);
+        animator.addAnimation(idleDown);
+
+        Animation idleLeft = new Animation("idle_left", true);
+        idleLeft.addFrame(playerSprites.getSprite(4), 1.0f);
+        animator.addAnimation(idleLeft);
+
+        Animation idleRight = new Animation("idle_right", true);
+        idleRight.addFrame(playerSprites.getSprite(7), 1.0f);
+        animator.addAnimation(idleRight);
+
+        Animation idleUp = new Animation("idle_up", true);
+        idleUp.addFrame(playerSprites.getSprite(10), 1.0f);
+        animator.addAnimation(idleUp);
+
+        // Agregamos el animador al jugador
+        jugador.addComponent(animator);
+
+        // Controladores y cámara (PlayerController ahora va sin parámetros)
+        jugador.addComponent(new PlayerController());
+        jugador.addComponent(new CameraFollow(this.camera, viewportSize, 6.0f));
+
+        // --- COLISIONES ---
+        Vector2f playerColliderSize = new Vector2f(24.0f, 34.0f);
+        Vector2f playerColliderOffset = new Vector2f(12.0f, 12.0f);
+        jugador.addComponent(new BoxCollider2D(playerColliderSize, playerColliderOffset));
+
         this.addGameObjectToScene(jugador);
 
 

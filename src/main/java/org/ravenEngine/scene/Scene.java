@@ -1,7 +1,6 @@
 package org.ravenEngine.scene;
 
 import org.ravenEngine.components.BoxCollider2D;
-import org.ravenEngine.components.Component;
 import org.ravenEngine.io.KeyListener;
 import org.ravenEngine.physics.CollisionPair;
 import org.ravenEngine.renderer.Camera;
@@ -65,9 +64,6 @@ public abstract class Scene {
         }
     }
 
-    public List<BoxCollider2D> getColliders(){
-        return colliders;
-    }
 
     public void update(float dt) {
         // Toggle de Debug con F1
@@ -138,7 +134,7 @@ public abstract class Scene {
     }
 
     private void resolvePhysicsCollision(BoxCollider2D a, BoxCollider2D b) {
-        // Si los dos son estáticos (ej: dos paredes solapadas), nadie se mueve
+        // Si los dos son estáticos (ej.: dos paredes solapadas), nadie se mueve
         if (a.isStatic() && b.isStatic()) {
             return;
         }
@@ -152,7 +148,7 @@ public abstract class Scene {
         float overlapX = Math.min(overlapLeft, overlapRight);
         float overlapY = Math.min(overlapBottom, overlapTop);
 
-        // Vector de corrección (hacia dónde empujar a 'a' respecto a 'b')
+        // Vector de corrección (hacia dónde empujar 'a' respecto a 'b')
         float resolveX = 0;
         float resolveY = 0;
 
@@ -170,7 +166,7 @@ public abstract class Scene {
             b.gameObject.transform.pos.x -= resolveX;
             b.gameObject.transform.pos.y -= resolveY;
         } else if (b.isStatic()) {
-            // 'b' es una pared, empujamos a 'a'
+            // 'b' es una pared, empujamos 'a'
             a.gameObject.transform.pos.x += resolveX;
             a.gameObject.transform.pos.y += resolveY;
         } else {
@@ -230,5 +226,8 @@ public abstract class Scene {
 
     public Camera getCamera() {
         return camera;
+    }
+    public List<GameObject> getGameObjects() {
+        return this.gameObjects;
     }
 }
