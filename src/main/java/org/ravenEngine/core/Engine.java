@@ -21,10 +21,20 @@ public class Engine {
     private static boolean isPlaying = false;
     private static boolean isPaused = false;
 
+    //CONSTRUCTORES
     public Engine(String title, int width, int height) {
         this.window = new Window("RavenEngine - AlquimistShop", 1280, 720);
     }
 
+
+    public static void changeScene(Scene newScene) {
+        currentScene = newScene;
+        currentScene.init(); // Arranca la carga de esa escena específica
+        currentScene.start();
+
+    }
+
+    //FUNCIONES
     public void start(Scene initialScene) {
         window.init();
 
@@ -44,34 +54,27 @@ public class Engine {
         cleanup();
     }
 
-    public static void changeScene(Scene newScene) {
-        currentScene = newScene;
-        currentScene.init(); // Arranca la carga de esa escena específica
-        currentScene.start();
-
+    private void update(float dt) {
+        // Aca van a actualizarse las escenas
     }
 
-    public static Scene getCurrentScene(){
-        return currentScene;
+    private void render() {
+        // Aca van a dibujarse las escenas
     }
 
     public void runLoop() {
         double lastFrameTime = glfwGetTime();
-
         while (isRunning && !window.shouldClose()) {
             double currentFrameTime = glfwGetTime();
             float deltaTime = (float) (currentFrameTime - lastFrameTime);
             lastFrameTime = currentFrameTime;
-
             //Limpiar lineas de fotograma anterior SIEMPRE
             DebugDraw.beginFrame();
-
             //DIBUJAR LA ESCENA ADENTRO DEL FRAMEBUFFER
             framebuffer.bind();
             glClearColor(0.08f, 0.09f, 0.12f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
-
-
+            //CREAR VENTANA
             ImGuiLayer gui = window.getImGuiLayer();
             // 1. Agregar la caja si hay un objeto seleccionado
             if (gui != null && gui.getSelectedGameObject() != null) {
@@ -85,7 +88,6 @@ public class Engine {
                     DebugDraw.addBox2D(min, max, new Vector3f(1.0f, 0.84f, 0.0f));
                 }
             }
-
             // 2. Renderizar sprites del juego
             if (currentScene != null) {
                 if (isPlaying && !isPaused) {
@@ -94,32 +96,23 @@ public class Engine {
                 currentScene.render();
                 DebugDraw.draw(currentScene.getCamera());
             }
-
-        // 3. Renderizar las líneas de debug POR ENCIMA de los sprites
-
-
             framebuffer.unbind();
-
             // 2. LIMPIAR LA PANTALLA PRINCIPAL DEL MONITOR
             glClearColor(0.15f, 0.15f, 0.18f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
-
             // 3. DIBUJAR IMGUI (QUE CONTIENE LA VENTANA CON LA TEXTURA)
             window.update(deltaTime, framebuffer,currentScene);
             MouseListener.endFrame();
         }
     }
 
-    private void update(float dt) {
-        // Aca van a actualizarse las escenas
-    }
-
-    private void render() {
-        // Aca van a dibujarse las escenas
-    }
-
     private void cleanup() {
         window.cleanup();
+    }
+
+    //GETTER Y SETTER
+    public static Scene getCurrentScene(){
+        return currentScene;
     }
 
     public static boolean IsPlaying() {

@@ -10,6 +10,7 @@ public class SpriteRenderer extends Component {
     private final Vector4f color;
     private Sprite sprite;
 
+    //CONSTRUCTORES
     // Solo color plano
     public SpriteRenderer(Vector4f color) {
         this.color = color;
@@ -28,6 +29,7 @@ public class SpriteRenderer extends Component {
         this.color = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
     }
 
+    //GETTERS Y SETTERS
     public Vector4f getColor() {
         return color;
     }

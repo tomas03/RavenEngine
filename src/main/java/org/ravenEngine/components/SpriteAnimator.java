@@ -18,12 +18,6 @@ public class SpriteAnimator extends Component{
         this.spriteRenderer = gameObject.getComponent(SpriteRenderer.class);
     }
 
-    public void addAnimation(Animation animation){
-        animations.put(animation.getTitle(),animation);
-        if (currentAnimation == null){
-            play(animation.title);
-        }
-    }
 
     public void play(String animationTitle){
         if (currentAnimation != null && currentAnimation.title.equals(animationTitle)){
@@ -52,6 +46,13 @@ public class SpriteAnimator extends Component{
             if (currentSprite != null){
                 spriteRenderer.setSprite(currentSprite);
             }
+        }
+    }
+
+    public void addAnimation(Animation animation){
+        animations.put(animation.getTitle(),animation);
+        if (currentAnimation == null){
+            play(animation.title);
         }
     }
 

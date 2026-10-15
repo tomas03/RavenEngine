@@ -39,6 +39,7 @@ public class SceneHierarchy {
         ImGui.end();
     }
 
+    //GETTERS Y SETTERS
     public GameObject getSelectedGameObject() {
         return selectedGameObject;
     }

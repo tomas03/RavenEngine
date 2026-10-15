@@ -30,9 +30,7 @@ public class GameObject {
         this.components.add(c);
     }
 
-    public List< Component > getAllComponents() {
-        return this.components;
-    }
+
 
     public void start(){
         for (Component component : components){
@@ -48,6 +46,10 @@ public class GameObject {
     public String getName(){return name;}
 
     public List<Component> getComponents() {
+        return this.components;
+    }
+
+    public List< Component > getAllComponents() {
         return this.components;
     }
 

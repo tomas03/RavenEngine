@@ -52,6 +52,11 @@ public class FrameBuffer {
     public void unbind(){
         glBindFramebuffer(GL_FRAMEBUFFER,0);
     }
+    public void destroy(){
+        glDeleteFramebuffers(fboId);
+        glDeleteTextures(textureId);
+        glDeleteRenderbuffers(rboId);
+    }
 
     public int getTextureId() {
         return textureId;
@@ -65,9 +70,4 @@ public class FrameBuffer {
         return height;
     }
 
-    public void destroy(){
-        glDeleteFramebuffers(fboId);
-        glDeleteTextures(textureId);
-        glDeleteRenderbuffers(rboId);
-    }
 }

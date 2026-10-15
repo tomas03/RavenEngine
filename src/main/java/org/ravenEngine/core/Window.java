@@ -25,12 +25,14 @@ public class Window {
     private double lastTime = 0.0;
     private int frameCount = 0;
 
+    //CONSTRUCTORES
     public Window(String title, int width, int height) {
         this.title = title;
         this.width = width;
         this.height = height;
     }
 
+    //FUNCIONES
     public void init() {
         GLFWErrorCallback.createPrint(System.err).set();
 

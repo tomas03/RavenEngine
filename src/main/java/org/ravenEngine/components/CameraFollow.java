@@ -15,6 +15,7 @@ public class CameraFollow extends Component {
     private float minY = 0.0f;
     private float maxY = 360.0f;
 
+    //CONSTRUCTORES
     public CameraFollow(Camera camera, Vector2f viewportSize) {
         this.camera = camera;
         this.viewportSize = viewportSize;
@@ -24,6 +25,7 @@ public class CameraFollow extends Component {
         this.viewportSize = viewportSize;
         this.smoothSpeed = smoothSpeed;
     }
+
     @Override
     public void update(float dt) {
         // 320 y 180 son la mitad exacta de 640x360

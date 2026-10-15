@@ -37,7 +37,7 @@ public class KeyListener {
         return false;
     }
 
-    //Click unico para menus,dialogos, etc
+    //Click único para menus,diálogos, etc
     public static boolean keyBeginPress(int keyCode){
         if (keyCode >= 0 && keyCode < get().keyBeginPress.length) {
             boolean result = get().keyBeginPress[keyCode];

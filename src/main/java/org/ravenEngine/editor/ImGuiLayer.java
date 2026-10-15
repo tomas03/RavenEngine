@@ -22,10 +22,12 @@ public class ImGuiLayer {
     private final SceneHierarchy sceneHierarchy = new SceneHierarchy();
     private final InspectorWindow inspectorWindow = new InspectorWindow();
 
+    //CONSTRUCTORES
     public ImGuiLayer(long glfwWindow) {
         this.glfwWindow = glfwWindow;
     }
 
+    //FUNCIONES
     public void init() {
         ImGui.createContext();
         ImGuiIO io = ImGui.getIO();
@@ -165,31 +167,6 @@ public class ImGuiLayer {
         imGuiGl3.renderDrawData(ImGui.getDrawData());
     }
 
-    private void pickObjectAt(float worldX, float worldY, Scene scene) {
-        GameObject hitObject = null;
-        List< GameObject > objects = scene.getGameObjects();
-
-        // Recorremos de atrás hacia adelante para seleccionar el objeto superior
-        for (int i = objects.size() - 1; i >= 0; i--) {
-            GameObject go = objects.get(i);
-            if (go.transform == null) continue;
-
-            float minX = go.transform.pos.x;
-            float minY = go.transform.pos.y;
-            float maxX = minX + go.transform.scale.x;
-            float maxY = minY + go.transform.scale.y;
-
-            // Chequeo AABB (Punto adentro de la caja)
-            if (worldX >= minX && worldX <= maxX && worldY >= minY && worldY <= maxY) {
-                hitObject = go;
-                break;
-            }
-        }
-
-        // Si tocó un objeto lo selecciona, si tocó el fondo vacío des-selecciona
-        sceneHierarchy.setSelectedGameObject(hitObject);
-    }
-
     private void setupDockSpace(Scene currentScene) {
         int windowFlags = ImGuiWindowFlags.MenuBar | ImGuiWindowFlags.NoDocking;
 
@@ -244,12 +221,39 @@ public class ImGuiLayer {
         ImGui.end();
     }
 
+
+    private void pickObjectAt(float worldX, float worldY, Scene scene) {
+        GameObject hitObject = null;
+        List< GameObject > objects = scene.getGameObjects();
+
+        // Recorremos de atrás hacia adelante para seleccionar el objeto superior
+        for (int i = objects.size() - 1; i >= 0; i--) {
+            GameObject go = objects.get(i);
+            if (go.transform == null) continue;
+
+            float minX = go.transform.pos.x;
+            float minY = go.transform.pos.y;
+            float maxX = minX + go.transform.scale.x;
+            float maxY = minY + go.transform.scale.y;
+
+            // Chequeo AABB (Punto adentro de la caja)
+            if (worldX >= minX && worldX <= maxX && worldY >= minY && worldY <= maxY) {
+                hitObject = go;
+                break;
+            }
+        }
+
+        // Si tocó un objeto lo selecciona, si tocó el fondo vacío des-selecciona
+        sceneHierarchy.setSelectedGameObject(hitObject);
+    }
+
     public void destroy() {
         imGuiGl3.dispose();
         imGuiGlfw.dispose();
         ImGui.destroyContext();
     }
 
+    //GETTERS Y SETTERS
     public GameObject getSelectedGameObject() {
         return sceneHierarchy.getSelectedGameObject();
     }

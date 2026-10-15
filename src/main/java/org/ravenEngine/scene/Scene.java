@@ -53,21 +53,28 @@ public abstract class Scene {
         isRunning = true;
     }
 
-    public void addGameObjectToScene(GameObject go) {
-        this.gameObjects.add(go);
-
-        // OBLIGATORIO: Si el GameObject tiene un BoxCollider2D, sumarlo a la lista de colisiones
-        BoxCollider2D collider = go.getComponent(BoxCollider2D.class);
-        if (collider != null) {
-            this.colliders.add(collider);
+    public void update(float dt) {
+        // Toggle de Debug con F1
+        if (KeyListener.isKeyPressed(GLFW_KEY_F1)) {
+            if (!f1Debounce) {
+                debugMode = !debugMode;
+                f1Debounce = true;
+            }
+        } else {
+            // Cuando suelta la tecla, liberamos el freno
+            f1Debounce = false;
         }
 
-        if (isRunning) {
-            go.start();
-            this.renderer.add(go);
+        for (GameObject go : gameObjects) {
+            go.update(dt);
         }
+        checkCollisions();
     }
 
+
+    //FUNCIONES
+
+    //GUARDADO
     public void save(String filePath){
         File file = new File(filePath);
         if (file.getParentFile() != null && !file.getParentFile().exists()) {
@@ -83,7 +90,7 @@ public abstract class Scene {
             e.printStackTrace();
         }
     }
-
+    //CARGADO
     public void load(String filePath) {
         File file = new File(filePath);
         if (!file.exists()) {
@@ -125,25 +132,35 @@ public abstract class Scene {
         }
     }
 
+    //AGREGAR OBJETO A LA ESCENA
+    public void addGameObjectToScene(GameObject go) {
+        this.gameObjects.add(go);
 
-    public void update(float dt) {
-        // Toggle de Debug con F1
-        if (KeyListener.isKeyPressed(GLFW_KEY_F1)) {
-            if (!f1Debounce) {
-                debugMode = !debugMode;
-                f1Debounce = true;
-            }
-        } else {
-            // Cuando suelta la tecla, liberamos el freno
-            f1Debounce = false;
+        // OBLIGATORIO: Si el GameObject tiene un BoxCollider2D, sumarlo a la lista de colisiones
+        BoxCollider2D collider = go.getComponent(BoxCollider2D.class);
+        if (collider != null) {
+            this.colliders.add(collider);
         }
 
-        for (GameObject go : gameObjects) {
-            go.update(dt);
+        if (isRunning) {
+            go.start();
+            this.renderer.add(go);
         }
-        checkCollisions();
     }
 
+    public void render() {
+        this.renderer.render(this.camera);
+
+        // Solo dibujamos los gizmos si el debug está activo
+        if (debugMode) {
+            DebugDraw.draw(this.camera);
+        }
+
+        // Siempre limpiamos el buffer para que no se acumulen líneas invisibles en memoria
+        DebugDraw.beginFrame();
+    }
+
+    //CHEQUEAR COLISIONES
     public void checkCollisions() {
         currentCollisions.clear();
 
@@ -187,6 +204,7 @@ public abstract class Scene {
         activeCollisions.addAll(currentCollisions);
     }
 
+    //FISICAS Y COLISIONES
     private boolean checkAABB(BoxCollider2D a, BoxCollider2D b) {
         return a.getMinX() < b.getMaxX() &&
                 a.getMaxX() > b.getMinX() &&
@@ -273,17 +291,7 @@ public abstract class Scene {
         }
     }
 
-    public void render() {
-        this.renderer.render(this.camera);
-
-        // Solo dibujamos los gizmos si el debug está activo
-        if (debugMode) {
-            DebugDraw.draw(this.camera);
-        }
-
-        // Siempre limpiamos el buffer para que no se acumulen líneas invisibles en memoria
-        DebugDraw.beginFrame();
-    }
+    //GETTERS Y SETTERS
 
     public Camera getCamera() {
         return camera;

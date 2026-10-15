@@ -11,6 +11,7 @@ public class BoxCollider2D extends Component {
     private boolean isTrigger = false;
     private boolean isStatic = false;
 
+    //CONSTRUCTORES
     // Colores de Debug: Verde para sólidos, Amarillo para triggers
     private static final Vector3f SOLID_COLOR = new Vector3f(0.0f, 1.0f, 0.0f);
     private static final Vector3f TRIGGER_COLOR = new Vector3f(1.0f, 0.85f, 0.0f);
@@ -40,6 +41,7 @@ public class BoxCollider2D extends Component {
         DebugDraw.addBox2D(min, max, color);
     }
 
+    //CHEQUEOS
     public boolean isTrigger() {
         return isTrigger;
     }
@@ -49,11 +51,11 @@ public class BoxCollider2D extends Component {
     public boolean isStatic() {
         return isStatic;
     }
-
     public void setStatic(boolean isStatic) {
         this.isStatic = isStatic;
     }
 
+    //GETTERS Y SETTERS
     public float getMinX() {
         return gameObject.transform.pos.x + offset.x;
     }
