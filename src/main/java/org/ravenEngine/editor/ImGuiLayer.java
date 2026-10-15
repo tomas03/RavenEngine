@@ -43,7 +43,7 @@ public class ImGuiLayer {
         ImGui.newFrame();
 
         // 1. CREAR EL DOCK SPACE PRINCIPAL (Cubre toda la pantalla)
-        setupDockSpace();
+        setupDockSpace(currentScene);
 
         // 2. VENTANA DE HERRAMIENTAS / CONTROL
         ImGui.begin("Herramientas");
@@ -53,7 +53,9 @@ public class ImGuiLayer {
         ImGui.text(String.format("Frame Time: %.3f ms", dt * 1000.0f));
         ImGui.separator();
         if (ImGui.button("Guardar Escena")) {
-            System.out.println("[IDE] Guardando escena...");
+            if (currentScene!=null){
+                currentScene.save("assets/scenes/level1.json");
+            }
         }
         ImGui.end();
 
@@ -188,7 +190,7 @@ public class ImGuiLayer {
         sceneHierarchy.setSelectedGameObject(hitObject);
     }
 
-    private void setupDockSpace() {
+    private void setupDockSpace(Scene currentScene) {
         int windowFlags = ImGuiWindowFlags.MenuBar | ImGuiWindowFlags.NoDocking;
 
         // Forzar a que ocupe exactamente la resolución de la ventana principal
@@ -215,8 +217,16 @@ public class ImGuiLayer {
         // Barra de menú superior (File, Edit, etc.)
         if (ImGui.beginMenuBar()) {
             if (ImGui.beginMenu("Archivo")) {
-                if (ImGui.menuItem("Nueva Escena")) {
-                    System.out.println("[IDE] Nueva Escena solicitada.");
+                if (ImGui.menuItem("Guardar Escena(ctrl+S)")) {
+                    if (currentScene!=null){
+                        currentScene.save("assets/scenes/level1.json");
+                    }
+                }
+                // OJO: currentScene.load() TIENE que estar adentro de las llaves del if
+                if (ImGui.menuItem("Recargar Escena")) {
+                    if (currentScene != null) {
+                        currentScene.load("assets/scenes/level1.json");
+                    }
                 }
                 if (ImGui.menuItem("Salir")) {
                     // Cierre controlado

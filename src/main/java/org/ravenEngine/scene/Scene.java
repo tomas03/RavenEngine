@@ -1,12 +1,16 @@
 package org.ravenEngine.scene;
 
+import com.google.gson.*;
 import org.ravenEngine.components.BoxCollider2D;
+import org.ravenEngine.components.Transform;
 import org.ravenEngine.io.KeyListener;
 import org.ravenEngine.physics.CollisionPair;
 import org.ravenEngine.renderer.Camera;
 import org.ravenEngine.renderer.DebugDraw;
 import org.ravenEngine.renderer.Renderer;
+import org.ravenEngine.util.ComponentDeserializer;
 
+import java.io.*;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -61,6 +65,63 @@ public abstract class Scene {
         if (isRunning) {
             go.start();
             this.renderer.add(go);
+        }
+    }
+
+    public void save(String filePath){
+        File file = new File(filePath);
+        if (file.getParentFile() != null && !file.getParentFile().exists()) {
+            file.getParentFile().mkdirs();
+        }
+        Gson gson = new GsonBuilder().setPrettyPrinting().registerTypeAdapter(Component.class, new ComponentDeserializer()).create();
+        try (FileWriter writer = new FileWriter(filePath)){
+            //Serializar la lista completa de GO de la escena
+            writer.write(gson.toJson(this.gameObjects));
+            System.out.println("[Scene] Escena guardada exitosamente en: " + filePath);
+        } catch (IOException e) {
+            System.err.println("[Scene] Error al guardar la escena: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    public void load(String filePath) {
+        File file = new File(filePath);
+        if (!file.exists()) {
+            System.out.println("[Scene] No se encontró el archivo de escena: " + filePath + ". Se mantendrá la escena base.");
+            return;
+        }
+
+        Gson gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .registerTypeAdapter(Component.class, new ComponentDeserializer())
+                .create();
+
+        try (FileReader reader = new FileReader(filePath)) {
+            GameObject[] objects = gson.fromJson(reader, GameObject[].class);
+            if (objects != null) {
+                this.gameObjects.clear();
+
+                // 2. Vaciamos los batches gráficos de la GPU para no duplicar sprites
+                if (this.renderer != null) {
+                    this.renderer.clear();
+                }
+
+                for (GameObject go : objects) {
+                    // 1. Reconectamos cada componente con este GameObject
+                    if (go.getComponents() != null) { // Usa el getter de tu lista de componentes
+                        for (Component c : go.getComponents()) {
+                            c.gameObject = go;
+                        }
+                    }
+
+                    // 3. Ahora sí lo agregamos a la escena de forma segura
+                    this.addGameObjectToScene(go);
+                }
+                System.out.println("[Scene] Escena cargada con " + objects.length + " entidades desde: " + filePath);
+            }
+        } catch (IOException e) {
+            System.err.println("[Scene] Error al cargar la escena: " + e.getMessage());
+            e.printStackTrace();
         }
     }
 

@@ -1,4 +1,4 @@
-package org.alchemistShop.scenes;
+package org.alchemistShop.assets.scenes;
 
 import org.alchemistShop.entities.PlayerController;
 import org.joml.Vector2f;
@@ -143,7 +143,7 @@ public class ShopScene extends Scene {
 
         this.addGameObjectToScene(jugador);
 
-
+        this.load("assets/scenes/level1.json");
     }
 
     @Override

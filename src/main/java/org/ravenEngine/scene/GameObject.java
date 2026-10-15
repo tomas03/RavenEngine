@@ -47,4 +47,8 @@ public class GameObject {
 
     public String getName(){return name;}
 
+    public List<Component> getComponents() {
+        return this.components;
+    }
+
 }

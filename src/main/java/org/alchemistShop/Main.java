@@ -1,6 +1,6 @@
 package org.alchemistShop;
 
-import org.alchemistShop.scenes.*;
+import org.alchemistShop.assets.scenes.*;
 import org.ravenEngine.core.Engine;
 
 

@@ -1,0 +1,1946 @@
+[
+  {
+    "name": "PocionRoja",
+    "components": [
+      {
+        "type": "org.ravenEngine.components.SpriteRenderer",
+        "properties": {
+          "color": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0,
+            "w": 1.0
+          },
+          "sprite": {
+            "texture": {
+              "filepath": "/textures/items_alquimia.png",
+              "textureId": 4,
+              "width": 669,
+              "height": 373
+            },
+            "texCoords": [
+              {
+                "x": 0.24962631,
+                "y": 1.0
+              },
+              {
+                "x": 0.24962631,
+                "y": 0.5013405
+              },
+              {
+                "x": 0.0,
+                "y": 0.5013405
+              },
+              {
+                "x": 0.0,
+                "y": 1.0
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "transform": {
+      "pos": {
+        "x": 100.0,
+        "y": 150.0
+      },
+      "scale": {
+        "x": 48.0,
+        "y": 48.0
+      },
+      "zIndex": 1
+    }
+  },
+  {
+    "name": "VialVerde",
+    "components": [
+      {
+        "type": "org.ravenEngine.components.SpriteRenderer",
+        "properties": {
+          "color": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0,
+            "w": 1.0
+          },
+          "sprite": {
+            "texture": {
+              "filepath": "/textures/items_alquimia.png",
+              "textureId": 4,
+              "width": 669,
+              "height": 373
+            },
+            "texCoords": [
+              {
+                "x": 0.49925262,
+                "y": 1.0
+              },
+              {
+                "x": 0.49925262,
+                "y": 0.5013405
+              },
+              {
+                "x": 0.24962631,
+                "y": 0.5013405
+              },
+              {
+                "x": 0.24962631,
+                "y": 1.0
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "transform": {
+      "pos": {
+        "x": 160.0,
+        "y": 150.0
+      },
+      "scale": {
+        "x": 48.0,
+        "y": 48.0
+      },
+      "zIndex": 1
+    }
+  },
+  {
+    "name": "MatrazAzul",
+    "components": [
+      {
+        "type": "org.ravenEngine.components.SpriteRenderer",
+        "properties": {
+          "color": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0,
+            "w": 1.0
+          },
+          "sprite": {
+            "texture": {
+              "filepath": "/textures/items_alquimia.png",
+              "textureId": 4,
+              "width": 669,
+              "height": 373
+            },
+            "texCoords": [
+              {
+                "x": 0.7488789,
+                "y": 1.0
+              },
+              {
+                "x": 0.7488789,
+                "y": 0.5013405
+              },
+              {
+                "x": 0.49925262,
+                "y": 0.5013405
+              },
+              {
+                "x": 0.49925262,
+                "y": 1.0
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "transform": {
+      "pos": {
+        "x": 220.0,
+        "y": 150.0
+      },
+      "scale": {
+        "x": 48.0,
+        "y": 48.0
+      },
+      "zIndex": 1
+    }
+  },
+  {
+    "name": "ElixirPurpura",
+    "components": [
+      {
+        "type": "org.ravenEngine.components.SpriteRenderer",
+        "properties": {
+          "color": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0,
+            "w": 1.0
+          },
+          "sprite": {
+            "texture": {
+              "filepath": "/textures/items_alquimia.png",
+              "textureId": 4,
+              "width": 669,
+              "height": 373
+            },
+            "texCoords": [
+              {
+                "x": 0.24962631,
+                "y": 0.5013405
+              },
+              {
+                "x": 0.24962631,
+                "y": 0.0026809652
+              },
+              {
+                "x": 0.0,
+                "y": 0.0026809652
+              },
+              {
+                "x": 0.0,
+                "y": 0.5013405
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "transform": {
+      "pos": {
+        "x": 280.0,
+        "y": 150.0
+      },
+      "scale": {
+        "x": 48.0,
+        "y": 48.0
+      },
+      "zIndex": 1
+    }
+  },
+  {
+    "name": "Hierbas",
+    "components": [
+      {
+        "type": "org.ravenEngine.components.SpriteRenderer",
+        "properties": {
+          "color": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0,
+            "w": 1.0
+          },
+          "sprite": {
+            "texture": {
+              "filepath": "/textures/items_alquimia.png",
+              "textureId": 4,
+              "width": 669,
+              "height": 373
+            },
+            "texCoords": [
+              {
+                "x": 0.49925262,
+                "y": 0.5013405
+              },
+              {
+                "x": 0.49925262,
+                "y": 0.0026809652
+              },
+              {
+                "x": 0.24962631,
+                "y": 0.0026809652
+              },
+              {
+                "x": 0.24962631,
+                "y": 0.5013405
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "transform": {
+      "pos": {
+        "x": 100.0,
+        "y": 95.0
+      },
+      "scale": {
+        "x": 48.0,
+        "y": 48.0
+      },
+      "zIndex": 1
+    }
+  },
+  {
+    "name": "Raiz",
+    "components": [
+      {
+        "type": "org.ravenEngine.components.SpriteRenderer",
+        "properties": {
+          "color": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0,
+            "w": 1.0
+          },
+          "sprite": {
+            "texture": {
+              "filepath": "/textures/items_alquimia.png",
+              "textureId": 4,
+              "width": 669,
+              "height": 373
+            },
+            "texCoords": [
+              {
+                "x": 0.7488789,
+                "y": 0.5013405
+              },
+              {
+                "x": 0.7488789,
+                "y": 0.0026809652
+              },
+              {
+                "x": 0.49925262,
+                "y": 0.0026809652
+              },
+              {
+                "x": 0.49925262,
+                "y": 0.5013405
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "transform": {
+      "pos": {
+        "x": 160.0,
+        "y": 95.0
+      },
+      "scale": {
+        "x": 48.0,
+        "y": 48.0
+      },
+      "zIndex": 1
+    }
+  },
+  {
+    "name": "Hongo",
+    "components": [
+      {
+        "type": "org.ravenEngine.components.SpriteRenderer",
+        "properties": {
+          "color": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0,
+            "w": 1.0
+          },
+          "sprite": {
+            "texture": {
+              "filepath": "/textures/items_alquimia.png",
+              "textureId": 4,
+              "width": 669,
+              "height": 373
+            },
+            "texCoords": [
+              {
+                "x": 0.24962631,
+                "y": 0.0026809652
+              },
+              {
+                "x": 0.24962631,
+                "y": -0.49597856
+              },
+              {
+                "x": 0.0,
+                "y": -0.49597856
+              },
+              {
+                "x": 0.0,
+                "y": 0.0026809652
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "transform": {
+      "pos": {
+        "x": 220.0,
+        "y": 95.0
+      },
+      "scale": {
+        "x": 48.0,
+        "y": 48.0
+      },
+      "zIndex": 1
+    }
+  },
+  {
+    "name": "FrascoVacio",
+    "components": [
+      {
+        "type": "org.ravenEngine.components.SpriteRenderer",
+        "properties": {
+          "color": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0,
+            "w": 1.0
+          },
+          "sprite": {
+            "texture": {
+              "filepath": "/textures/items_alquimia.png",
+              "textureId": 4,
+              "width": 669,
+              "height": 373
+            },
+            "texCoords": [
+              {
+                "x": 0.49925262,
+                "y": 0.0026809652
+              },
+              {
+                "x": 0.49925262,
+                "y": -0.49597856
+              },
+              {
+                "x": 0.24962631,
+                "y": -0.49597856
+              },
+              {
+                "x": 0.24962631,
+                "y": 0.0026809652
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "transform": {
+      "pos": {
+        "x": 280.0,
+        "y": 95.0
+      },
+      "scale": {
+        "x": 48.0,
+        "y": 48.0
+      },
+      "zIndex": 1
+    }
+  },
+  {
+    "name": "Mostrador",
+    "components": [
+      {
+        "type": "org.ravenEngine.components.SpriteRenderer",
+        "properties": {
+          "color": {
+            "x": 0.45,
+            "y": 0.25,
+            "z": 0.1,
+            "w": 1.0
+          },
+          "sprite": {
+            "texCoords": [
+              {
+                "x": 1.0,
+                "y": 1.0
+              },
+              {
+                "x": 1.0,
+                "y": 0.0
+              },
+              {
+                "x": 0.0,
+                "y": 0.0
+              },
+              {
+                "x": 0.0,
+                "y": 1.0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "org.ravenEngine.components.BoxCollider2D",
+        "properties": {
+          "size": {
+            "x": 260.0,
+            "y": 40.0
+          },
+          "offset": {
+            "x": 0.0,
+            "y": 0.0
+          },
+          "isTrigger": false,
+          "isStatic": true
+        }
+      }
+    ],
+    "transform": {
+      "pos": {
+        "x": 80.0,
+        "y": 50.0
+      },
+      "scale": {
+        "x": 260.0,
+        "y": 45.0
+      },
+      "zIndex": 1
+    }
+  },
+  {
+    "name": "RavenTom",
+    "components": [
+      {
+        "type": "org.ravenEngine.components.SpriteRenderer",
+        "properties": {
+          "color": {
+            "x": 1.0,
+            "y": 1.0,
+            "z": 1.0,
+            "w": 1.0
+          },
+          "sprite": {
+            "texture": {
+              "filepath": "/textures/Personaje.png",
+              "textureId": 3,
+              "width": 96,
+              "height": 128
+            },
+            "texCoords": [
+              {
+                "x": 0.6666667,
+                "y": 1.0
+              },
+              {
+                "x": 0.6666667,
+                "y": 0.75
+              },
+              {
+                "x": 0.33333334,
+                "y": 0.75
+              },
+              {
+                "x": 0.33333334,
+                "y": 1.0
+              }
+            ]
+          }
+        }
+      },
+      {
+        "type": "org.ravenEngine.components.SpriteAnimator",
+        "properties": {
+          "animations": {
+            "idle_right": {
+              "title": "idle_right",
+              "frames": [
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 0.6666667,
+                        "y": 0.5
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.25
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.25
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.5
+                      }
+                    ]
+                  },
+                  "frameTime": 1.0
+                }
+              ],
+              "doesLoop": true,
+              "currentFrameIndex": 0,
+              "timeTracker": 0.0
+            },
+            "idle_up": {
+              "title": "idle_up",
+              "frames": [
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 0.6666667,
+                        "y": 0.25
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.0
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.0
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.25
+                      }
+                    ]
+                  },
+                  "frameTime": 1.0
+                }
+              ],
+              "doesLoop": true,
+              "currentFrameIndex": 0,
+              "timeTracker": 0.0
+            },
+            "idle_down": {
+              "title": "idle_down",
+              "frames": [
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 0.6666667,
+                        "y": 1.0
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 1.0
+                      }
+                    ]
+                  },
+                  "frameTime": 1.0
+                }
+              ],
+              "doesLoop": true,
+              "currentFrameIndex": 0,
+              "timeTracker": 0.0
+            },
+            "walk_right": {
+              "title": "walk_right",
+              "frames": [
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 0.33333334,
+                        "y": 0.5
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.25
+                      },
+                      {
+                        "x": 0.0,
+                        "y": 0.25
+                      },
+                      {
+                        "x": 0.0,
+                        "y": 0.5
+                      }
+                    ]
+                  },
+                  "frameTime": 0.15
+                },
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 0.6666667,
+                        "y": 0.5
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.25
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.25
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.5
+                      }
+                    ]
+                  },
+                  "frameTime": 0.15
+                },
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 1.0,
+                        "y": 0.5
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 0.25
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.25
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.5
+                      }
+                    ]
+                  },
+                  "frameTime": 0.15
+                }
+              ],
+              "doesLoop": true,
+              "currentFrameIndex": 0,
+              "timeTracker": 0.0
+            },
+            "walk_down": {
+              "title": "walk_down",
+              "frames": [
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 0.33333334,
+                        "y": 1.0
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.0,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.0,
+                        "y": 1.0
+                      }
+                    ]
+                  },
+                  "frameTime": 0.15
+                },
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 0.6666667,
+                        "y": 1.0
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 1.0
+                      }
+                    ]
+                  },
+                  "frameTime": 0.15
+                },
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 1.0,
+                        "y": 1.0
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 1.0
+                      }
+                    ]
+                  },
+                  "frameTime": 0.15
+                }
+              ],
+              "doesLoop": true,
+              "currentFrameIndex": 0,
+              "timeTracker": 0.0
+            },
+            "walk_left": {
+              "title": "walk_left",
+              "frames": [
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 0.33333334,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.5
+                      },
+                      {
+                        "x": 0.0,
+                        "y": 0.5
+                      },
+                      {
+                        "x": 0.0,
+                        "y": 0.75
+                      }
+                    ]
+                  },
+                  "frameTime": 0.15
+                },
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 0.6666667,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.5
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.5
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.75
+                      }
+                    ]
+                  },
+                  "frameTime": 0.15
+                },
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 1.0,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 0.5
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.5
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.75
+                      }
+                    ]
+                  },
+                  "frameTime": 0.15
+                }
+              ],
+              "doesLoop": true,
+              "currentFrameIndex": 0,
+              "timeTracker": 0.0
+            },
+            "idle_left": {
+              "title": "idle_left",
+              "frames": [
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 0.6666667,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.5
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.5
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.75
+                      }
+                    ]
+                  },
+                  "frameTime": 1.0
+                }
+              ],
+              "doesLoop": true,
+              "currentFrameIndex": 0,
+              "timeTracker": 0.0
+            },
+            "walk_up": {
+              "title": "walk_up",
+              "frames": [
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 0.33333334,
+                        "y": 0.25
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.0
+                      },
+                      {
+                        "x": 0.0,
+                        "y": 0.0
+                      },
+                      {
+                        "x": 0.0,
+                        "y": 0.25
+                      }
+                    ]
+                  },
+                  "frameTime": 0.15
+                },
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 0.6666667,
+                        "y": 0.25
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.0
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.0
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.25
+                      }
+                    ]
+                  },
+                  "frameTime": 0.15
+                },
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 1.0,
+                        "y": 0.25
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 0.0
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.0
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.25
+                      }
+                    ]
+                  },
+                  "frameTime": 0.15
+                }
+              ],
+              "doesLoop": true,
+              "currentFrameIndex": 0,
+              "timeTracker": 0.0
+            }
+          },
+          "currentAnimation": {
+            "title": "walk_down",
+            "frames": [
+              {
+                "sprite": {
+                  "texture": {
+                    "filepath": "/textures/Personaje.png",
+                    "textureId": 3,
+                    "width": 96,
+                    "height": 128
+                  },
+                  "texCoords": [
+                    {
+                      "x": 0.33333334,
+                      "y": 1.0
+                    },
+                    {
+                      "x": 0.33333334,
+                      "y": 0.75
+                    },
+                    {
+                      "x": 0.0,
+                      "y": 0.75
+                    },
+                    {
+                      "x": 0.0,
+                      "y": 1.0
+                    }
+                  ]
+                },
+                "frameTime": 0.15
+              },
+              {
+                "sprite": {
+                  "texture": {
+                    "filepath": "/textures/Personaje.png",
+                    "textureId": 3,
+                    "width": 96,
+                    "height": 128
+                  },
+                  "texCoords": [
+                    {
+                      "x": 0.6666667,
+                      "y": 1.0
+                    },
+                    {
+                      "x": 0.6666667,
+                      "y": 0.75
+                    },
+                    {
+                      "x": 0.33333334,
+                      "y": 0.75
+                    },
+                    {
+                      "x": 0.33333334,
+                      "y": 1.0
+                    }
+                  ]
+                },
+                "frameTime": 0.15
+              },
+              {
+                "sprite": {
+                  "texture": {
+                    "filepath": "/textures/Personaje.png",
+                    "textureId": 3,
+                    "width": 96,
+                    "height": 128
+                  },
+                  "texCoords": [
+                    {
+                      "x": 1.0,
+                      "y": 1.0
+                    },
+                    {
+                      "x": 1.0,
+                      "y": 0.75
+                    },
+                    {
+                      "x": 0.6666667,
+                      "y": 0.75
+                    },
+                    {
+                      "x": 0.6666667,
+                      "y": 1.0
+                    }
+                  ]
+                },
+                "frameTime": 0.15
+              }
+            ],
+            "doesLoop": true,
+            "currentFrameIndex": 0,
+            "timeTracker": 0.0
+          },
+          "spriteRenderer": {
+            "color": {
+              "x": 1.0,
+              "y": 1.0,
+              "z": 1.0,
+              "w": 1.0
+            },
+            "sprite": {
+              "texture": {
+                "filepath": "/textures/Personaje.png",
+                "textureId": 3,
+                "width": 96,
+                "height": 128
+              },
+              "texCoords": [
+                {
+                  "x": 0.6666667,
+                  "y": 1.0
+                },
+                {
+                  "x": 0.6666667,
+                  "y": 0.75
+                },
+                {
+                  "x": 0.33333334,
+                  "y": 0.75
+                },
+                {
+                  "x": 0.33333334,
+                  "y": 1.0
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "type": "org.alchemistShop.entities.PlayerController",
+        "properties": {
+          "speed": 150.0,
+          "animator": {
+            "animations": {
+              "idle_right": {
+                "title": "idle_right",
+                "frames": [
+                  {
+                    "sprite": {
+                      "texture": {
+                        "filepath": "/textures/Personaje.png",
+                        "textureId": 3,
+                        "width": 96,
+                        "height": 128
+                      },
+                      "texCoords": [
+                        {
+                          "x": 0.6666667,
+                          "y": 0.5
+                        },
+                        {
+                          "x": 0.6666667,
+                          "y": 0.25
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.25
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.5
+                        }
+                      ]
+                    },
+                    "frameTime": 1.0
+                  }
+                ],
+                "doesLoop": true,
+                "currentFrameIndex": 0,
+                "timeTracker": 0.0
+              },
+              "idle_up": {
+                "title": "idle_up",
+                "frames": [
+                  {
+                    "sprite": {
+                      "texture": {
+                        "filepath": "/textures/Personaje.png",
+                        "textureId": 3,
+                        "width": 96,
+                        "height": 128
+                      },
+                      "texCoords": [
+                        {
+                          "x": 0.6666667,
+                          "y": 0.25
+                        },
+                        {
+                          "x": 0.6666667,
+                          "y": 0.0
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.0
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.25
+                        }
+                      ]
+                    },
+                    "frameTime": 1.0
+                  }
+                ],
+                "doesLoop": true,
+                "currentFrameIndex": 0,
+                "timeTracker": 0.0
+              },
+              "idle_down": {
+                "title": "idle_down",
+                "frames": [
+                  {
+                    "sprite": {
+                      "texture": {
+                        "filepath": "/textures/Personaje.png",
+                        "textureId": 3,
+                        "width": 96,
+                        "height": 128
+                      },
+                      "texCoords": [
+                        {
+                          "x": 0.6666667,
+                          "y": 1.0
+                        },
+                        {
+                          "x": 0.6666667,
+                          "y": 0.75
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.75
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 1.0
+                        }
+                      ]
+                    },
+                    "frameTime": 1.0
+                  }
+                ],
+                "doesLoop": true,
+                "currentFrameIndex": 0,
+                "timeTracker": 0.0
+              },
+              "walk_right": {
+                "title": "walk_right",
+                "frames": [
+                  {
+                    "sprite": {
+                      "texture": {
+                        "filepath": "/textures/Personaje.png",
+                        "textureId": 3,
+                        "width": 96,
+                        "height": 128
+                      },
+                      "texCoords": [
+                        {
+                          "x": 0.33333334,
+                          "y": 0.5
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.25
+                        },
+                        {
+                          "x": 0.0,
+                          "y": 0.25
+                        },
+                        {
+                          "x": 0.0,
+                          "y": 0.5
+                        }
+                      ]
+                    },
+                    "frameTime": 0.15
+                  },
+                  {
+                    "sprite": {
+                      "texture": {
+                        "filepath": "/textures/Personaje.png",
+                        "textureId": 3,
+                        "width": 96,
+                        "height": 128
+                      },
+                      "texCoords": [
+                        {
+                          "x": 0.6666667,
+                          "y": 0.5
+                        },
+                        {
+                          "x": 0.6666667,
+                          "y": 0.25
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.25
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.5
+                        }
+                      ]
+                    },
+                    "frameTime": 0.15
+                  },
+                  {
+                    "sprite": {
+                      "texture": {
+                        "filepath": "/textures/Personaje.png",
+                        "textureId": 3,
+                        "width": 96,
+                        "height": 128
+                      },
+                      "texCoords": [
+                        {
+                          "x": 1.0,
+                          "y": 0.5
+                        },
+                        {
+                          "x": 1.0,
+                          "y": 0.25
+                        },
+                        {
+                          "x": 0.6666667,
+                          "y": 0.25
+                        },
+                        {
+                          "x": 0.6666667,
+                          "y": 0.5
+                        }
+                      ]
+                    },
+                    "frameTime": 0.15
+                  }
+                ],
+                "doesLoop": true,
+                "currentFrameIndex": 0,
+                "timeTracker": 0.0
+              },
+              "walk_down": {
+                "title": "walk_down",
+                "frames": [
+                  {
+                    "sprite": {
+                      "texture": {
+                        "filepath": "/textures/Personaje.png",
+                        "textureId": 3,
+                        "width": 96,
+                        "height": 128
+                      },
+                      "texCoords": [
+                        {
+                          "x": 0.33333334,
+                          "y": 1.0
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.75
+                        },
+                        {
+                          "x": 0.0,
+                          "y": 0.75
+                        },
+                        {
+                          "x": 0.0,
+                          "y": 1.0
+                        }
+                      ]
+                    },
+                    "frameTime": 0.15
+                  },
+                  {
+                    "sprite": {
+                      "texture": {
+                        "filepath": "/textures/Personaje.png",
+                        "textureId": 3,
+                        "width": 96,
+                        "height": 128
+                      },
+                      "texCoords": [
+                        {
+                          "x": 0.6666667,
+                          "y": 1.0
+                        },
+                        {
+                          "x": 0.6666667,
+                          "y": 0.75
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.75
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 1.0
+                        }
+                      ]
+                    },
+                    "frameTime": 0.15
+                  },
+                  {
+                    "sprite": {
+                      "texture": {
+                        "filepath": "/textures/Personaje.png",
+                        "textureId": 3,
+                        "width": 96,
+                        "height": 128
+                      },
+                      "texCoords": [
+                        {
+                          "x": 1.0,
+                          "y": 1.0
+                        },
+                        {
+                          "x": 1.0,
+                          "y": 0.75
+                        },
+                        {
+                          "x": 0.6666667,
+                          "y": 0.75
+                        },
+                        {
+                          "x": 0.6666667,
+                          "y": 1.0
+                        }
+                      ]
+                    },
+                    "frameTime": 0.15
+                  }
+                ],
+                "doesLoop": true,
+                "currentFrameIndex": 0,
+                "timeTracker": 0.0
+              },
+              "walk_left": {
+                "title": "walk_left",
+                "frames": [
+                  {
+                    "sprite": {
+                      "texture": {
+                        "filepath": "/textures/Personaje.png",
+                        "textureId": 3,
+                        "width": 96,
+                        "height": 128
+                      },
+                      "texCoords": [
+                        {
+                          "x": 0.33333334,
+                          "y": 0.75
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.5
+                        },
+                        {
+                          "x": 0.0,
+                          "y": 0.5
+                        },
+                        {
+                          "x": 0.0,
+                          "y": 0.75
+                        }
+                      ]
+                    },
+                    "frameTime": 0.15
+                  },
+                  {
+                    "sprite": {
+                      "texture": {
+                        "filepath": "/textures/Personaje.png",
+                        "textureId": 3,
+                        "width": 96,
+                        "height": 128
+                      },
+                      "texCoords": [
+                        {
+                          "x": 0.6666667,
+                          "y": 0.75
+                        },
+                        {
+                          "x": 0.6666667,
+                          "y": 0.5
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.5
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.75
+                        }
+                      ]
+                    },
+                    "frameTime": 0.15
+                  },
+                  {
+                    "sprite": {
+                      "texture": {
+                        "filepath": "/textures/Personaje.png",
+                        "textureId": 3,
+                        "width": 96,
+                        "height": 128
+                      },
+                      "texCoords": [
+                        {
+                          "x": 1.0,
+                          "y": 0.75
+                        },
+                        {
+                          "x": 1.0,
+                          "y": 0.5
+                        },
+                        {
+                          "x": 0.6666667,
+                          "y": 0.5
+                        },
+                        {
+                          "x": 0.6666667,
+                          "y": 0.75
+                        }
+                      ]
+                    },
+                    "frameTime": 0.15
+                  }
+                ],
+                "doesLoop": true,
+                "currentFrameIndex": 0,
+                "timeTracker": 0.0
+              },
+              "idle_left": {
+                "title": "idle_left",
+                "frames": [
+                  {
+                    "sprite": {
+                      "texture": {
+                        "filepath": "/textures/Personaje.png",
+                        "textureId": 3,
+                        "width": 96,
+                        "height": 128
+                      },
+                      "texCoords": [
+                        {
+                          "x": 0.6666667,
+                          "y": 0.75
+                        },
+                        {
+                          "x": 0.6666667,
+                          "y": 0.5
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.5
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.75
+                        }
+                      ]
+                    },
+                    "frameTime": 1.0
+                  }
+                ],
+                "doesLoop": true,
+                "currentFrameIndex": 0,
+                "timeTracker": 0.0
+              },
+              "walk_up": {
+                "title": "walk_up",
+                "frames": [
+                  {
+                    "sprite": {
+                      "texture": {
+                        "filepath": "/textures/Personaje.png",
+                        "textureId": 3,
+                        "width": 96,
+                        "height": 128
+                      },
+                      "texCoords": [
+                        {
+                          "x": 0.33333334,
+                          "y": 0.25
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.0
+                        },
+                        {
+                          "x": 0.0,
+                          "y": 0.0
+                        },
+                        {
+                          "x": 0.0,
+                          "y": 0.25
+                        }
+                      ]
+                    },
+                    "frameTime": 0.15
+                  },
+                  {
+                    "sprite": {
+                      "texture": {
+                        "filepath": "/textures/Personaje.png",
+                        "textureId": 3,
+                        "width": 96,
+                        "height": 128
+                      },
+                      "texCoords": [
+                        {
+                          "x": 0.6666667,
+                          "y": 0.25
+                        },
+                        {
+                          "x": 0.6666667,
+                          "y": 0.0
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.0
+                        },
+                        {
+                          "x": 0.33333334,
+                          "y": 0.25
+                        }
+                      ]
+                    },
+                    "frameTime": 0.15
+                  },
+                  {
+                    "sprite": {
+                      "texture": {
+                        "filepath": "/textures/Personaje.png",
+                        "textureId": 3,
+                        "width": 96,
+                        "height": 128
+                      },
+                      "texCoords": [
+                        {
+                          "x": 1.0,
+                          "y": 0.25
+                        },
+                        {
+                          "x": 1.0,
+                          "y": 0.0
+                        },
+                        {
+                          "x": 0.6666667,
+                          "y": 0.0
+                        },
+                        {
+                          "x": 0.6666667,
+                          "y": 0.25
+                        }
+                      ]
+                    },
+                    "frameTime": 0.15
+                  }
+                ],
+                "doesLoop": true,
+                "currentFrameIndex": 0,
+                "timeTracker": 0.0
+              }
+            },
+            "currentAnimation": {
+              "title": "walk_down",
+              "frames": [
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 0.33333334,
+                        "y": 1.0
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.0,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.0,
+                        "y": 1.0
+                      }
+                    ]
+                  },
+                  "frameTime": 0.15
+                },
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 0.6666667,
+                        "y": 1.0
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.33333334,
+                        "y": 1.0
+                      }
+                    ]
+                  },
+                  "frameTime": 0.15
+                },
+                {
+                  "sprite": {
+                    "texture": {
+                      "filepath": "/textures/Personaje.png",
+                      "textureId": 3,
+                      "width": 96,
+                      "height": 128
+                    },
+                    "texCoords": [
+                      {
+                        "x": 1.0,
+                        "y": 1.0
+                      },
+                      {
+                        "x": 1.0,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 0.75
+                      },
+                      {
+                        "x": 0.6666667,
+                        "y": 1.0
+                      }
+                    ]
+                  },
+                  "frameTime": 0.15
+                }
+              ],
+              "doesLoop": true,
+              "currentFrameIndex": 0,
+              "timeTracker": 0.0
+            },
+            "spriteRenderer": {
+              "color": {
+                "x": 1.0,
+                "y": 1.0,
+                "z": 1.0,
+                "w": 1.0
+              },
+              "sprite": {
+                "texture": {
+                  "filepath": "/textures/Personaje.png",
+                  "textureId": 3,
+                  "width": 96,
+                  "height": 128
+                },
+                "texCoords": [
+                  {
+                    "x": 0.6666667,
+                    "y": 1.0
+                  },
+                  {
+                    "x": 0.6666667,
+                    "y": 0.75
+                  },
+                  {
+                    "x": 0.33333334,
+                    "y": 0.75
+                  },
+                  {
+                    "x": 0.33333334,
+                    "y": 1.0
+                  }
+                ]
+              }
+            }
+          },
+          "lastDirection": "down"
+        }
+      },
+      {
+        "type": "org.ravenEngine.components.CameraFollow",
+        "properties": {
+          "camera": {
+            "projectionMatrix": {
+              "m00": 0.003125,
+              "m01": 0.0,
+              "m02": 0.0,
+              "m03": 0.0,
+              "m10": 0.0,
+              "m11": 0.0055555557,
+              "m12": 0.0,
+              "m13": 0.0,
+              "m20": 0.0,
+              "m21": 0.0,
+              "m22": -0.02,
+              "m23": 0.0,
+              "m30": -1.0,
+              "m31": -1.0,
+              "m32": -1.0,
+              "m33": 1.0,
+              "properties": 2
+            },
+            "viewMatrix": {
+              "m00": 1.0,
+              "m01": 0.0,
+              "m02": 0.0,
+              "m03": 0.0,
+              "m10": 0.0,
+              "m11": 1.0,
+              "m12": 0.0,
+              "m13": 0.0,
+              "m20": 0.0,
+              "m21": 0.0,
+              "m22": 1.0,
+              "m23": 0.0,
+              "m30": -0.0,
+              "m31": -0.0,
+              "m32": -20.0,
+              "m33": 1.0,
+              "properties": 18
+            },
+            "position": {
+              "x": 0.0,
+              "y": 0.0
+            }
+          },
+          "viewportSize": {
+            "x": 640.0,
+            "y": 360.0
+          },
+          "smoothSpeed": 6.0,
+          "minX": 0.0,
+          "maxX": 640.0,
+          "minY": 0.0,
+          "maxY": 360.0
+        }
+      },
+      {
+        "type": "org.ravenEngine.components.BoxCollider2D",
+        "properties": {
+          "size": {
+            "x": 24.0,
+            "y": 34.0
+          },
+          "offset": {
+            "x": 12.0,
+            "y": 12.0
+          },
+          "isTrigger": false,
+          "isStatic": false
+        }
+      }
+    ],
+    "transform": {
+      "pos": {
+        "x": 360.0,
+        "y": 187.0
+      },
+      "scale": {
+        "x": 48.0,
+        "y": 54.0
+      },
+      "zIndex": 1
+    }
+  }
+]

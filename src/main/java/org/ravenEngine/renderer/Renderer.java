@@ -44,6 +44,10 @@ public class Renderer {
         }
     }
 
+    public void clear() {
+        this.batches.clear();
+    }
+
     public void render(Camera camera){
         for (RenderBatch batch : batches){
             batch.render(camera);

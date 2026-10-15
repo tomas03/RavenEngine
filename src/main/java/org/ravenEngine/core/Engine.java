@@ -76,7 +76,6 @@ public class Engine {
             // 1. Agregar la caja si hay un objeto seleccionado
             if (gui != null && gui.getSelectedGameObject() != null) {
                 GameObject selected = gui.getSelectedGameObject();
-                System.out.println("[DEBUG CAJA] Objeto detectado: " + selected.getName());
                 if (selected.transform != null) {
                     Vector2f min = new Vector2f(selected.transform.pos.x, selected.transform.pos.y);
                     Vector2f max = new Vector2f(
