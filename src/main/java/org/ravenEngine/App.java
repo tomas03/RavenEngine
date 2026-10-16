@@ -11,7 +11,5 @@ public class App {
         Engine engine = new Engine("RavenEngine - Editor IDE", 1280, 720);
 
         engine.start(new ShopScene());
-        // Arrancamos el bucle del motor con la UI de ImGui activa
-        engine.runLoop();
     }
 }

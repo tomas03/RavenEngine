@@ -4,6 +4,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.ravenEngine.renderer.Sprite;
+import org.ravenEngine.renderer.SpriteRenderer;
 import org.ravenEngine.renderer.animation.Animation;
 import org.ravenEngine.scene.Component;
 
@@ -35,15 +36,15 @@ public class SpriteAnimator extends Component{
 
     @Override
     public void update(float dt) {
-        if (spriteRenderer == null){
+        if (spriteRenderer == null) {
             spriteRenderer = gameObject.getComponent(SpriteRenderer.class);
             if (spriteRenderer == null) return;
         }
 
-        if (currentAnimation != null){
+        if (currentAnimation != null) {
             currentAnimation.update(dt);
             Sprite currentSprite = currentAnimation.getCurrentSprite();
-            if (currentSprite != null){
+            if (currentSprite != null) {
                 spriteRenderer.setSprite(currentSprite);
             }
         }

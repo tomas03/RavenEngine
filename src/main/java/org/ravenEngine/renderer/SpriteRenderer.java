@@ -1,14 +1,13 @@
-package org.ravenEngine.components;
+package org.ravenEngine.renderer;
 
 import org.joml.Vector2f;
 import org.joml.Vector4f;
-import org.ravenEngine.renderer.Sprite;
-import org.ravenEngine.renderer.Texture;
 import org.ravenEngine.scene.Component;
 
 public class SpriteRenderer extends Component {
     private final Vector4f color;
     private Sprite sprite;
+    private boolean isDirty = true;
 
     //CONSTRUCTORES
     // Solo color plano
@@ -44,5 +43,12 @@ public class SpriteRenderer extends Component {
 
     public void setSprite(Sprite sprite) {
         this.sprite = sprite;
+    }
+
+    public boolean isDirty() {
+        return this.isDirty;
+    }
+    public void setClean(){
+        this.isDirty = false;
     }
 }

@@ -9,11 +9,17 @@ public class GameObject {
     private final String name;
     private final List<Component> components;
     public Transform transform;
+    private int zIndex = 0;
 
     public GameObject(String name, Transform transform) {
         this.name = name;
         this.transform = transform;
         this.components = new ArrayList<>();
+    }
+
+    public GameObject(String name, Transform transform, int zIndex) {
+        this(name, transform); // Llama al constructor de arriba que ya hace todo
+        this.zIndex = zIndex;
     }
 
     public<T extends Component>T getComponent(Class<T> componentClass){
@@ -41,6 +47,10 @@ public class GameObject {
         for (Component component : components){
             component.update(dt);
         }
+    }
+
+    public int getzIndex() {
+        return zIndex;
     }
 
     public String getName(){return name;}

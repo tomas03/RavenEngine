@@ -8,8 +8,11 @@ import imgui.flag.*;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
 import org.joml.Vector2f;
+import org.ravenEngine.components.Tilemap;
 import org.ravenEngine.core.Engine;
 import org.ravenEngine.renderer.FrameBuffer;
+import org.ravenEngine.renderer.Sprite;
+import org.ravenEngine.renderer.Spritesheet;
 import org.ravenEngine.scene.GameObject;
 import org.ravenEngine.scene.Scene;
 
@@ -22,17 +25,22 @@ public class ImGuiLayer {
     private final SceneHierarchy sceneHierarchy = new SceneHierarchy();
     private final InspectorWindow inspectorWindow = new InspectorWindow();
 
-    //CONSTRUCTORES
+    private String sceneSnapshot = null;
+
+    // --- VARIABLES DEL SISTEMA DE PINCEL (TILEMAP) ---
+    private boolean tileEditMode = false;
+    private int selectedTileIndex = 0;
+
+    // CONSTRUCTORES
     public ImGuiLayer(long glfwWindow) {
         this.glfwWindow = glfwWindow;
     }
 
-    //FUNCIONES
+    // FUNCIONES
     public void init() {
         ImGui.createContext();
         ImGuiIO io = ImGui.getIO();
 
-        // Habilitar soporte de ventanas acoplables (Docking) y navegación por teclado
         io.addConfigFlags(ImGuiConfigFlags.DockingEnable);
         io.addConfigFlags(ImGuiConfigFlags.NavEnableKeyboard);
 
@@ -43,140 +51,254 @@ public class ImGuiLayer {
     public void update(float dt, FrameBuffer framebuffer, Scene currentScene) {
         imGuiGlfw.newFrame();
         ImGui.newFrame();
+        ImGuiIO io = ImGui.getIO();
+        //verificar si se mantiene presionado el ctrl y acaba de tocar la S
+        boolean ctrlPressed = io.getKeyCtrl();
+        boolean sPressed = ImGui.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_S);
 
-        // 1. CREAR EL DOCK SPACE PRINCIPAL (Cubre toda la pantalla)
+        if (ctrlPressed&&sPressed){
+            if (currentScene!=null){
+                currentScene.save("alchemistShop/assets/level1.json");
+                System.out.println("[IDE] Escena guardada con Ctrl + S");
+            }
+        }
+
+        // 2. ATAJO DEBUG: F1 (isKeyPressed solo dispara 1 vez por pulsación, sin rebote)
+        if (ImGui.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_F1, false)) {
+            if (currentScene != null) {
+                currentScene.toggleDebugMode();
+            }
+        }
+
+        // 1. DOCKSPACE
         setupDockSpace(currentScene);
 
-        // 2. VENTANA DE HERRAMIENTAS / CONTROL
+        // 2. BUSCAR TILEMAP ACTIVO
+        Tilemap activeTilemap = findActiveTilemap(currentScene);
+
+        // 3. VENTANA DE HERRAMIENTAS
         ImGui.begin("Herramientas");
         ImGui.text("RavenEngine IDE");
         ImGui.separator();
         ImGui.text(String.format("FPS: %.1f", 1.0f / dt));
         ImGui.text(String.format("Frame Time: %.3f ms", dt * 1000.0f));
         ImGui.separator();
-        if (ImGui.button("Guardar Escena")) {
-            if (currentScene!=null){
-                currentScene.save("assets/scenes/level1.json");
-            }
+
+        // Selector de Modo: Inspección vs. Pincel
+        if (ImGui.checkbox("Modo Pincel de Tiles", tileEditMode)) {
+            tileEditMode = !tileEditMode;
+        }
+
+        if (tileEditMode) {
+            ImGui.textColored(0.2f, 0.8f, 0.2f, 1.0f, "[Pincel Activo]");
+            ImGui.text("Clic Izq: Pintar | Clic Der: Borrar");
+        } else {
+            ImGui.textColored(0.8f, 0.8f, 0.2f, 1.0f, "[Modo Selección]");
         }
         ImGui.end();
 
-        // --- 4. VIEWPORT DEL JUEGO (FRAMEBUFFER) ---
+        // 4. VENTANA DE PALETA DE TILES
+        if (tileEditMode && activeTilemap != null) {
+            renderTilePaletteWindow(activeTilemap);
+        }
+
+        // 5. VIEWPORT DEL JUEGO
         ImGui.begin("Scene Viewport", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
 
         if (framebuffer != null) {
             ImVec2 windowSize = new ImVec2();
             ImGui.getContentRegionAvail(windowSize);
 
-            // Obtenemos la posición de inicio del contenido (esquina superior izquierda de la imagen)
             ImVec2 cursorPos = new ImVec2();
             ImGui.getCursorScreenPos(cursorPos);
 
-            // Dibujar la textura del Framebuffer
+            // Dibujar Framebuffer invertido para OpenGL
             ImGui.image(framebuffer.getTextureId(), windowSize.x, windowSize.y, 0, 1, 1, 0);
 
             // ==========================================
-            // MOUSE PICKING 2D
+            // ENTRADA EN EL VIEWPORT (MOUSE)
             // ==========================================
-            if (ImGui.isWindowHovered() && ImGui.isMouseClicked(0)) {
+            if (ImGui.isWindowHovered()) {
                 ImVec2 mousePos = ImGui.getMousePos();
 
-                // 1. Mouse relativo al Viewport (de 0 a windowSize)
                 float localX = mousePos.x - cursorPos.x;
                 float localY = mousePos.y - cursorPos.y;
 
-                // 2. Normalizar coordenadas de 0.0 a 1.0
                 float u = localX / windowSize.x;
                 float v = localY / windowSize.y;
 
-                // 3. Convertir a coordenadas normalizadas de OpenGL (-1 a 1)
-                // Invertimos uve porque en ImGui Y crece hacia abajo y en OpenGL hacia arriba
                 float ndcX = (u * 2.0f) - 1.0f;
                 float ndcY = -((v * 2.0f) - 1.0f);
 
                 if (currentScene != null && currentScene.getCamera() != null) {
-                    Vector2f worldCords = currentScene.getCamera().screenToWorld(ndcX, ndcY);
-                    pickObjectAt(worldCords.x, worldCords.y, currentScene);
+                    Vector2f worldCoords = currentScene.getCamera().screenToWorld(localX, localY, windowSize.x, windowSize.y);
+
+                    if (tileEditMode && activeTilemap != null) {
+                        // --- MODO PINTAR / BORRAR TILES (Arrastre continuo) ---
+                        Vector2f grid = activeTilemap.worldToGrid(worldCoords.x, worldCoords.y);
+                        int gx = (int) grid.x;
+                        int gy = (int) grid.y;
+
+                        // Clic Izquierdo -> Pintar
+                        if (ImGui.isMouseDown(0)) {
+                            if (activeTilemap.getTile(gx, gy) != selectedTileIndex) {
+                                activeTilemap.setTile(gx, gy, selectedTileIndex);
+                            }
+                        }
+                        // Clic Derecho -> Borrar
+                        else if (ImGui.isMouseDown(1)) {
+                            if (activeTilemap.getTile(gx, gy) != -1) {
+                                activeTilemap.setTile(gx, gy, -1);
+                            }
+                        }
+                    } else {
+                        // --- MODO SELECCIÓN CLÁSICO (Picking de GameObjects) ---
+                        if (ImGui.isMouseClicked(0)) {
+                            pickObjectAt(worldCoords.x, worldCoords.y, currentScene);
+                        }
+                    }
                 }
             }
         }
 
         ImGui.end();
 
-        // --- BARRA DE CONTROL DE SIMULACIÓN (PLAY / PAUSE / STOP) ---
+        // 6. BARRA DE CONTROL DE SIMULACIÓN
+        renderSimulationControls(dt, currentScene);
+
+        // 7. JERARQUÍA E INSPECTOR
+        sceneHierarchy.update(currentScene);
+        inspectorWindow.update(sceneHierarchy.getSelectedGameObject());
+
+        // 8. RENDERIZADO FINAL
+        ImGui.render();
+        imGuiGl3.renderDrawData(ImGui.getDrawData());
+    }
+
+    private Tilemap findActiveTilemap(Scene scene) {
+        if (scene == null) return null;
+
+        // Si tenemos un GameObject seleccionado que contiene Tilemap, usamos ese
+        GameObject selected = sceneHierarchy.getSelectedGameObject();
+        if (selected != null && selected.getComponent(Tilemap.class) != null) {
+            return selected.getComponent(Tilemap.class);
+        }
+
+        // Si no, buscamos el primer Tilemap disponible en la escena
+        for (GameObject go : scene.getGameObjects()) {
+            Tilemap tm = go.getComponent(Tilemap.class);
+            if (tm != null) return tm;
+        }
+        return null;
+    }
+
+    private void renderTilePaletteWindow(Tilemap tilemap) {
+        ImGui.begin("Paleta de Tiles");
+
+        Spritesheet sheet = tilemap.getSpritesheet();
+        if (sheet == null || sheet.size() == 0) {
+            ImGui.text("El Tilemap no posee Spritesheet cargado.");
+            ImGui.end();
+            return;
+        }
+
+        if (ImGui.button("Borrador (Vacío)")) {
+            selectedTileIndex = -1;
+        }
+        ImGui.sameLine();
+        ImGui.text(selectedTileIndex == -1 ? "Tile actual: [Borrador]" : "Tile actual: #" + selectedTileIndex);
+
+        ImGui.separator();
+
+        int textureId = sheet.getSprite(0).getTexture().getTextureId();
+        int columns = 4;
+
+        for (int i = 0; i < sheet.size(); i++) {
+            Sprite sprite = sheet.getSprite(i);
+            Vector2f[] uv = sprite.getTexCoords();
+
+            ImGui.pushID(i);
+            // Botón con la miniatura del sprite
+            if (ImGui.imageButton(textureId, 32, 32, uv[2].x, uv[2].y, uv[0].x, uv[0].y)) {
+                selectedTileIndex = i;
+            }
+            ImGui.popID();
+
+            if ((i + 1) % columns != 0 && (i + 1) < sheet.size()) {
+                ImGui.sameLine();
+            }
+        }
+
+        ImGui.end();
+    }
+
+    private void renderSimulationControls(float dt, Scene currentScene) {
         ImGui.begin("Control de Juego");
 
         boolean isPlaying = Engine.IsPlaying();
         boolean isPaused = Engine.IsPaused();
 
-        // BOTÓN PLAY
-        if (isPlaying && !isPaused) {
-            ImGui.pushStyleColor(ImGuiCol.Button, 0.2f, 0.7f, 0.2f, 1.0f); // Verde brillante si está corriendo
-        }
+        if (isPlaying && !isPaused) ImGui.pushStyleColor(ImGuiCol.Button, 0.2f, 0.7f, 0.2f, 1.0f);
         if (ImGui.button(" > Play ")) {
-            Engine.setPlaying(true);
-            Engine.setPaused(false);
-            System.out.println("Simulación iniciada.");
+            if (!isPlaying) {
+                if (currentScene != null) {
+                    sceneSnapshot = currentScene.serializeToString();
+                    System.out.println("[IDE] Snapshot de escena guardado en memoria.");
+                }
+                Engine.setPlaying(true);
+                Engine.setPaused(false);
+                System.out.println("Simulación iniciada.");
+            }
         }
-        if (isPlaying && !isPaused) {
-            ImGui.popStyleColor();
-        }
+        if (isPlaying && !isPaused) ImGui.popStyleColor();
 
         ImGui.sameLine();
 
-        // BOTÓN PAUSE
-        if (isPaused) {
-            ImGui.pushStyleColor(ImGuiCol.Button, 0.8f, 0.8f, 0.2f, 1.0f); // Amarillo si está en pausa
-        }
+        if (isPaused) ImGui.pushStyleColor(ImGuiCol.Button, 0.8f, 0.8f, 0.2f, 1.0f);
         if (ImGui.button(" || Pause ")) {
             if (isPlaying) {
                 Engine.setPaused(!isPaused);
                 System.out.println("Pausa: " + !isPaused);
             }
         }
-        if (isPaused) {
-            ImGui.popStyleColor();
-        }
+        if (isPaused) ImGui.popStyleColor();
 
         ImGui.sameLine();
 
-        // BOTÓN STOP
-        if (!isPlaying) {
-            ImGui.pushStyleColor(ImGuiCol.Button, 0.6f, 0.2f, 0.2f, 1.0f); // Rojo suave seh está detenido
-        }
+        if (!isPlaying) ImGui.pushStyleColor(ImGuiCol.Button, 0.6f, 0.2f, 0.2f, 1.0f);
         if (ImGui.button(" [] Stop ")) {
-            Engine.setPlaying(false);
-            System.out.println("[Motor] Simulación detenida.");
-        }
-        if (!isPlaying) {
-            ImGui.popStyleColor();
-        }
+            if (isPlaying || isPaused) {
+                Engine.setPlaying(false);
+                Engine.setPaused(false);
 
+                if (sceneSnapshot != null && currentScene != null) {
+                    currentScene.loadFromString(sceneSnapshot);
+                    if (sceneHierarchy != null) {
+                        sceneHierarchy.setSelectedGameObject(null);
+                    }
+                    System.out.println("[IDE] Escena restaurada al estado de edición.");
+                }
+
+                System.out.println("[Motor] Simulación detenida.");
+            }
+        }
+        if (!isPlaying) ImGui.popStyleColor();
 
         ImGui.separator();
         ImGui.text(String.format("Estado: %s", !isPlaying ? "Edición (Detenido)" : (isPaused ? "Pausado" : "Simulando (Play)")));
         ImGui.text(String.format("FPS: %.1f", 1.0f / dt));
 
         ImGui.end();
-
-        sceneHierarchy.update(currentScene);
-        inspectorWindow.update(sceneHierarchy.getSelectedGameObject());
-
-        // 4. Renderizado final a OpenGL
-        ImGui.render();
-        imGuiGl3.renderDrawData(ImGui.getDrawData());
     }
 
     private void setupDockSpace(Scene currentScene) {
         int windowFlags = ImGuiWindowFlags.MenuBar | ImGuiWindowFlags.NoDocking;
 
-        // Forzar a que ocupe exactamente la resolución de la ventana principal
         ImGuiViewport mainViewport = ImGui.getMainViewport();
         ImGui.setNextWindowPos(mainViewport.getWorkPosX(), mainViewport.getWorkPosY());
         ImGui.setNextWindowSize(mainViewport.getWorkSizeX(), mainViewport.getWorkSizeY());
         ImGui.setNextWindowViewport(mainViewport.getID());
 
-        // Quitar bordes, títulos y comportamiento de ventana común
         ImGui.pushStyleVar(ImGuiStyleVar.WindowRounding, 0.0f);
         ImGui.pushStyleVar(ImGuiStyleVar.WindowBorderSize, 0.0f);
         windowFlags |= ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse
@@ -187,26 +309,22 @@ public class ImGuiLayer {
         ImGui.begin("DockSpaceDemo", windowFlags);
         ImGui.popStyleVar(3);
 
-        // Generar el espacio de acople central
         int dockSpaceId = ImGui.getID("RavenEngineDockSpace");
         ImGui.dockSpace(dockSpaceId, 0.0f, 0.0f, ImGuiDockNodeFlags.None);
 
-        // Barra de menú superior (File, Edit, etc.)
         if (ImGui.beginMenuBar()) {
             if (ImGui.beginMenu("Archivo")) {
                 if (ImGui.menuItem("Guardar Escena(ctrl+S)")) {
-                    if (currentScene!=null){
-                        currentScene.save("assets/scenes/level1.json");
+                    if (currentScene != null) {
+                        currentScene.save("alchemistShop/assets/level1.json");
                     }
                 }
-                // OJO: currentScene.load() TIENE que estar adentro de las llaves del if
                 if (ImGui.menuItem("Recargar Escena")) {
                     if (currentScene != null) {
-                        currentScene.load("assets/scenes/level1.json");
+                        currentScene.load("alchemistShop/assets/level1.json");
                     }
                 }
                 if (ImGui.menuItem("Salir")) {
-                    // Cierre controlado
                     System.exit(0);
                 }
                 ImGui.endMenu();
@@ -221,12 +339,10 @@ public class ImGuiLayer {
         ImGui.end();
     }
 
-
     private void pickObjectAt(float worldX, float worldY, Scene scene) {
         GameObject hitObject = null;
-        List< GameObject > objects = scene.getGameObjects();
+        List<GameObject> objects = scene.getGameObjects();
 
-        // Recorremos de atrás hacia adelante para seleccionar el objeto superior
         for (int i = objects.size() - 1; i >= 0; i--) {
             GameObject go = objects.get(i);
             if (go.transform == null) continue;
@@ -236,14 +352,12 @@ public class ImGuiLayer {
             float maxX = minX + go.transform.scale.x;
             float maxY = minY + go.transform.scale.y;
 
-            // Chequeo AABB (Punto adentro de la caja)
             if (worldX >= minX && worldX <= maxX && worldY >= minY && worldY <= maxY) {
                 hitObject = go;
                 break;
             }
         }
 
-        // Si tocó un objeto lo selecciona, si tocó el fondo vacío des-selecciona
         sceneHierarchy.setSelectedGameObject(hitObject);
     }
 
@@ -252,8 +366,7 @@ public class ImGuiLayer {
         imGuiGlfw.dispose();
         ImGui.destroyContext();
     }
-
-    //GETTERS Y SETTERS
+    // GETTERS Y SETTERS
     public GameObject getSelectedGameObject() {
         return sceneHierarchy.getSelectedGameObject();
     }

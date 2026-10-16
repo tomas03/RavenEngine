@@ -54,6 +54,8 @@ public class Texture {
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this.width, this.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
             stbi_image_free(image);
         } else {
+            System.err.println("[Texture ERROR] No se pudo cargar la imagen en: " + filepath);
+            System.err.println("[Texture ERROR] Razón STB: " + stbi_failure_reason());
             throw new RuntimeException("Error al procesar la imagen con STB: " + resolvedPath + " -> " + stbi_failure_reason());
         }
 
@@ -98,5 +100,31 @@ public class Texture {
 
     public int getHeight() {
         return height;
+    }
+
+    public int getTextureId() {
+        return textureId;
+    }
+
+    //Override
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Texture texture = (Texture) o;
+        // Dos texturas son iguales si comparten el mismo ID de GPU o la misma ruta de archivo
+        if (this.textureId != 0 && texture.textureId != 0) {
+            return this.textureId == texture.textureId;
+        }
+        return this.filepath != null && this.filepath.equals(texture.filepath);
+    }
+
+    @Override
+    public int hashCode() {
+        return filepath != null ? filepath.hashCode() : Integer.hashCode(textureId);
+    }
+
+    public String getFilepath() {
+        return filepath;
     }
 }

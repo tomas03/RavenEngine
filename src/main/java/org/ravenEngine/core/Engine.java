@@ -94,7 +94,6 @@ public class Engine {
                     currentScene.update(deltaTime);
                 }
                 currentScene.render();
-                DebugDraw.draw(currentScene.getCamera());
             }
             framebuffer.unbind();
             // 2. LIMPIAR LA PANTALLA PRINCIPAL DEL MONITOR

@@ -24,29 +24,30 @@ public class Camera {
         projectionMatrix.ortho(0.0f, 640.0f, 0.0f, 360.0f, 0.0f, 100.0f);
     }
 
-    public Matrix4f getViewMatrix(){
-        Vector3f cameraFront = new Vector3f(0.0f,0.0f,-1.0f);
-        Vector3f cameraUp = new Vector3f(0.0f,1.0f,0.0f);
-        viewMatrix.identity();
-        viewMatrix.lookAt(
-                new Vector3f(position.x,position.y,20.0f),
-                cameraFront.add(position.x,position.y,0.0f),
+    public Matrix4f getViewMatrix() {
+        Vector3f cameraFront = new Vector3f(0.0f, 0.0f, -1.0f);
+        Vector3f cameraUp = new Vector3f(0.0f, 1.0f, 0.0f);
+        this.viewMatrix.identity();
+        this.viewMatrix.lookAt(
+                new Vector3f(position.x, position.y, 20.0f),
+                cameraFront.add(position.x, position.y, 0.0f),
                 cameraUp
         );
-        return viewMatrix;
+        return this.viewMatrix;
     }
 
-    public Vector2f screenToWorld(float normX, float normY) {
-        // normX y normY van de -1.0 a 1.0 (NDC)
-        Vector4f clipSpace = new Vector4f(normX, normY, 0.0f, 1.0f);
+    public Vector2f screenToWorld(float screenX, float screenY, float viewportWidth, float viewportHeight) {
+        // 1. Normalizar las coordenadas a rango [0, 1] respecto al Viewport
+        float normalizedX = screenX / viewportWidth;
+        // Invertimos Y porque la pantalla tiene (0,0) arriba-izquierda y el mundo abajo-izquierda
+        float normalizedY = (viewportHeight - screenY) / viewportHeight;
 
-        // Matriz inversa View * Projection
-        Matrix4f invViewProj = new Matrix4f();
-        this.projectionMatrix.mul(this.viewMatrix, invViewProj);
-        invViewProj.invert();
+        // 2. Mapear a coordenadas de proyección ortográfica de la cámara
+        // Asumiendo proyección ortográfica estándar (ancho y alto virtuales del viewport de la cámara)
+        float worldX = this.position.x + (normalizedX * 640.0f);
+        float worldY = this.position.y + (normalizedY * 360.0f);
 
-        clipSpace.mul(invViewProj);
-        return new Vector2f(clipSpace.x, clipSpace.y);
+        return new Vector2f(worldX, worldY);
     }
 
     public Matrix4f getProjectionMatrix() {

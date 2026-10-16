@@ -1,6 +1,5 @@
 package org.ravenEngine.renderer;
 
-import org.ravenEngine.components.SpriteRenderer;
 import org.ravenEngine.scene.GameObject;
 
 import java.util.ArrayList;

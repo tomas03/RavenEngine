@@ -61,7 +61,7 @@ public class PlayerController extends Component {
                 } else if (dx < 0) {
                     animator.play("walk_left");
                     lastDirection = "left";
-                } else if (dx > 0) {
+                } else {
                     animator.play("walk_right");
                     lastDirection = "right";
                 }

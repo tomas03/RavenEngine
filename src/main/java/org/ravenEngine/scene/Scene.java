@@ -1,7 +1,10 @@
 package org.ravenEngine.scene;
 
 import com.google.gson.*;
+import org.joml.Vector2f;
 import org.ravenEngine.components.BoxCollider2D;
+import org.ravenEngine.components.CameraFollow;
+import org.ravenEngine.components.Tilemap;
 import org.ravenEngine.components.Transform;
 import org.ravenEngine.io.KeyListener;
 import org.ravenEngine.physics.CollisionPair;
@@ -9,8 +12,10 @@ import org.ravenEngine.renderer.Camera;
 import org.ravenEngine.renderer.DebugDraw;
 import org.ravenEngine.renderer.Renderer;
 import org.ravenEngine.util.ComponentDeserializer;
+import org.ravenEngine.util.ComponentSerializer;
 
 import java.io.*;
+import java.lang.reflect.Modifier;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -54,15 +59,10 @@ public abstract class Scene {
     }
 
     public void update(float dt) {
-        // Toggle de Debug con F1
-        if (KeyListener.isKeyPressed(GLFW_KEY_F1)) {
-            if (!f1Debounce) {
-                debugMode = !debugMode;
-                f1Debounce = true;
-            }
-        } else {
-            // Cuando suelta la tecla, liberamos el freno
-            f1Debounce = false;
+        // keyBeginPress solo devuelve true en el PRIMER frame que baja la tecla
+        if (KeyListener.keyBeginPress(org.lwjgl.glfw.GLFW.GLFW_KEY_F3)) {
+            debugMode = !debugMode;
+            System.out.println("[Scene] Debug Mode cambiado a: " + debugMode);
         }
 
         for (GameObject go : gameObjects) {
@@ -75,14 +75,20 @@ public abstract class Scene {
     //FUNCIONES
 
     //GUARDADO
-    public void save(String filePath){
+    public void save(String filePath) {
         File file = new File(filePath);
         if (file.getParentFile() != null && !file.getParentFile().exists()) {
             file.getParentFile().mkdirs();
         }
-        Gson gson = new GsonBuilder().setPrettyPrinting().registerTypeAdapter(Component.class, new ComponentDeserializer()).create();
-        try (FileWriter writer = new FileWriter(filePath)){
-            //Serializar la lista completa de GO de la escena
+
+        Gson gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .registerTypeAdapter(Component.class, new ComponentSerializer())
+                .registerTypeAdapter(Component.class, new ComponentDeserializer())
+                .excludeFieldsWithModifiers(java.lang.reflect.Modifier.TRANSIENT | java.lang.reflect.Modifier.STATIC)
+                .create();
+
+        try (FileWriter writer = new FileWriter(filePath)) {
             writer.write(gson.toJson(this.gameObjects));
             System.out.println("[Scene] Escena guardada exitosamente en: " + filePath);
         } catch (IOException e) {
@@ -90,7 +96,6 @@ public abstract class Scene {
             e.printStackTrace();
         }
     }
-    //CARGADO
     public void load(String filePath) {
         File file = new File(filePath);
         if (!file.exists()) {
@@ -100,7 +105,9 @@ public abstract class Scene {
 
         Gson gson = new GsonBuilder()
                 .setPrettyPrinting()
+                .registerTypeAdapter(Component.class, new ComponentSerializer())
                 .registerTypeAdapter(Component.class, new ComponentDeserializer())
+                .excludeFieldsWithModifiers(java.lang.reflect.Modifier.TRANSIENT | java.lang.reflect.Modifier.STATIC)
                 .create();
 
         try (FileReader reader = new FileReader(filePath)) {
@@ -108,21 +115,26 @@ public abstract class Scene {
             if (objects != null) {
                 this.gameObjects.clear();
 
-                // 2. Vaciamos los batches gráficos de la GPU para no duplicar sprites
                 if (this.renderer != null) {
                     this.renderer.clear();
                 }
 
                 for (GameObject go : objects) {
-                    // 1. Reconectamos cada componente con este GameObject
-                    if (go.getComponents() != null) { // Usa el getter de tu lista de componentes
+                    if (go.getComponents() != null) {
                         for (Component c : go.getComponents()) {
                             c.gameObject = go;
+
+                            // 1. Inyectamos la cámara de la escena si es el script de seguimiento
+                            if (c instanceof CameraFollow) {
+                                ((CameraFollow) c).setCamera(this.camera);
+                            }
                         }
                     }
 
-                    // 3. Ahora sí lo agregamos a la escena de forma segura
                     this.addGameObjectToScene(go);
+
+                    // 2. Iniciamos el objeto para que inicialice buffers (como el Tilemap)
+                    go.start();
                 }
                 System.out.println("[Scene] Escena cargada con " + objects.length + " entidades desde: " + filePath);
             }
@@ -149,6 +161,14 @@ public abstract class Scene {
     }
 
     public void render() {
+        // 1. Dibujamos el piso/tilemaps de fondo
+        for (GameObject go : this.gameObjects) {
+            Tilemap tm = go.getComponent(Tilemap.class);
+            if (tm != null) {
+                tm.render(this.camera);
+            }
+        }
+
         this.renderer.render(this.camera);
 
         // Solo dibujamos los gizmos si el debug está activo
@@ -158,6 +178,55 @@ public abstract class Scene {
 
         // Siempre limpiamos el buffer para que no se acumulen líneas invisibles en memoria
         DebugDraw.beginFrame();
+    }
+
+    //SERIALIZACIÓN EN MEMORIA
+    public String serializeToString() {
+        Gson gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .registerTypeAdapter(Component.class, new ComponentSerializer())
+                .registerTypeAdapter(Component.class, new ComponentDeserializer())
+                .excludeFieldsWithModifiers(java.lang.reflect.Modifier.TRANSIENT | java.lang.reflect.Modifier.STATIC)
+                .create();
+
+        return gson.toJson(this.gameObjects);
+    }
+
+    // RESTAURA LA ESCENA DESDE MEMORIA (PLAY / STOP)
+    public void loadFromString(String jsonContent) {
+        if (jsonContent == null || jsonContent.isEmpty()) return;
+
+        Gson gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .registerTypeAdapter(Component.class, new ComponentSerializer())
+                .registerTypeAdapter(Component.class, new ComponentDeserializer())
+                .excludeFieldsWithModifiers(java.lang.reflect.Modifier.TRANSIENT | java.lang.reflect.Modifier.STATIC)
+                .create();
+
+        GameObject[] objects = gson.fromJson(jsonContent, GameObject[].class);
+        if (objects != null) {
+            this.gameObjects.clear();
+            if (this.renderer != null) {
+                this.renderer.clear();
+            }
+
+            for (GameObject go : objects) {
+                if (go.getComponents() != null) {
+                    for (Component c : go.getComponents()) {
+                        c.gameObject = go;
+
+                        // 1. Inyectamos la cámara al restaurar snapshot
+                        if (c instanceof CameraFollow) {
+                            ((CameraFollow) c).setCamera(this.camera);
+                        }
+                    }
+                }
+                this.addGameObjectToScene(go);
+
+                // 2. Rearmamos buffers y estados
+                go.start();
+            }
+        }
     }
 
     //CHEQUEAR COLISIONES
@@ -291,8 +360,42 @@ public abstract class Scene {
         }
     }
 
-    //GETTERS Y SETTERS
+    private void resolveTilemapCollision(BoxCollider2D collider, Tilemap tilemap){
+        if (collider.isStatic()||tilemap==null||tilemap.gameObject == null)return;
+        Vector2f tilemapOrigin = tilemap.gameObject.transform.pos;
+        int tileW = tilemap.getTileWidth();
+        int tileH = tilemap.getTileHeight();
 
+        //obtener los límites del collider en el mundo
+        float colMinX = collider.getMinX();
+        float colMaxX = collider.getMaxX();
+        float colMinY = collider.getMinY();
+        float colMaxY = collider.getMaxY();
+
+        //convertir el rango del collider a coordenadas de celdas
+        int minTileX = (int) Math.floor((colMinX - tilemapOrigin.x) / tileW);
+        int maxTileX = (int) Math.floor((colMaxX - tilemapOrigin.x) / tileW);
+        int minTileY = (int) Math.floor((colMinY - tilemapOrigin.y) / tileH);
+        int maxTileY = (int) Math.floor((colMaxY - tilemapOrigin.y) / tileH);
+
+        //revisar solo las celdas que el collider está tocando
+        for (int tx = minTileX;tx<=maxTileX;tx++){
+            for (int ty = minTileY;ty<maxTileY;ty++){
+                if (!tilemap.isSolid(tx,ty)) continue;
+
+                //AABB de la baldosa sólida actual
+                
+            }
+        }
+    }
+
+    //GETTERS Y SETTERS
+    public void toggleDebugMode() {
+        this.debugMode = !this.debugMode;
+    }
+    public boolean isDebugMode() {
+        return this.debugMode;
+    }
     public Camera getCamera() {
         return camera;
     }

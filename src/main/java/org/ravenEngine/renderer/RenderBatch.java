@@ -3,7 +3,6 @@ package org.ravenEngine.renderer;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
-import org.ravenEngine.components.SpriteRenderer;
 import org.ravenEngine.util.AssetPool;
 
 import java.nio.FloatBuffer;
@@ -139,12 +138,23 @@ public class RenderBatch {
         Vector2f[] texCoords = sprite.getTexCoords();
 
         // Buscamos cuál es el slot de esta textura (+1 porque 0 es color plano)
-        float texId = 0.0f;
+        int texId = 0;
         if (sprite.getTexture() != null) {
             for (int i = 0; i < textures.size(); i++) {
                 if (textures.get(i).equals(sprite.getTexture())) {
                     texId = i + 1;
                     break;
+                }
+            }
+
+            // Si la textura es nueva (ej: vino de una animación en tiempo de ejecución),
+            // la registramos en el batch para que el shader la active
+            if (texId == 0) {
+                if (textures.size() < 8) {
+                    textures.add(sprite.getTexture());
+                    texId = textures.size(); // Corresponde al nuevo índice (size - 1) + 1
+                } else {
+                    System.err.println("[RenderBatch] Límite de 8 texturas alcanzado en el batch.");
                 }
             }
         }
