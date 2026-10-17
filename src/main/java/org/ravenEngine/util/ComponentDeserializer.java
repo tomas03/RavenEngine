@@ -58,7 +58,7 @@ public class ComponentDeserializer implements JsonDeserializer<Component> {
         String[] packages = new String[] {
                 "org.ravenEngine.renderer.",
                 "org.ravenEngine.components.",
-                "org.alchemistShop.entities.",
+                "org.alchemistShop.assets.scenes.entities.",
                 "org.ravenEngine.physics."
         };
 

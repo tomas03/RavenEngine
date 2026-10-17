@@ -1,6 +1,9 @@
-package org.alchemistShop.entities;
+package org.alchemistShop.assets.entities;
 
+import org.joml.Vector2f;
+import org.ravenEngine.components.Interactable;
 import org.ravenEngine.components.SpriteAnimator;
+import org.ravenEngine.core.Engine;
 import org.ravenEngine.io.KeyListener;
 import org.ravenEngine.scene.Component;
 import org.ravenEngine.scene.GameObject;
@@ -43,6 +46,10 @@ public class PlayerController extends Component {
             dx -= 1.0f;
         }
 
+        if (KeyListener.isKeyPressed(GLFW_KEY_E)) {
+            interactWithNearest();
+        }
+
         boolean moving = (dx != 0.0f || dy != 0.0f);
 
         if (moving) {
@@ -71,6 +78,37 @@ public class PlayerController extends Component {
             if (animator != null) {
                 animator.play("idle_" + lastDirection);
             }
+        }
+    }
+
+    private void interactWithNearest() {
+        if (Engine.getCurrentScene() == null || this.gameObject == null) return;
+
+        Vector2f playerCenter = new Vector2f(
+                gameObject.transform.pos.x + (gameObject.transform.scale.x / 2.0f),
+                gameObject.transform.pos.y + (gameObject.transform.scale.y / 2.0f)
+        );
+
+        Interactable nearestInteractable = null;
+        float closestDistance = Float.MAX_VALUE;
+
+        // Buscamos entre todos los GameObjects de la escena
+        for (GameObject go : Engine.getCurrentScene().getGameObjects()) {
+            if (go == this.gameObject) continue;
+
+            Interactable interactable = go.getComponent(Interactable.class);
+            if (interactable != null && interactable.checkPlayerDistance(playerCenter)) {
+                float dist = playerCenter.distance(go.transform.pos);
+                if (dist < closestDistance) {
+                    closestDistance = dist;
+                    nearestInteractable = interactable;
+                }
+            }
+        }
+
+        // Si encontramos una poción u objeto al alcance, interactuamos
+        if (nearestInteractable != null) {
+            nearestInteractable.onInteract(this.gameObject);
         }
     }
 

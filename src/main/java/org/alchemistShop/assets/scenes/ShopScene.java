@@ -1,6 +1,7 @@
 package org.alchemistShop.assets.scenes;
 
-import org.alchemistShop.entities.PlayerController;
+import org.alchemistShop.assets.entities.ItemPickup;
+import org.alchemistShop.assets.entities.PlayerController;
 import org.joml.Vector2f;
 import org.ravenEngine.components.*;
 import org.ravenEngine.renderer.SpriteRenderer;
@@ -66,6 +67,7 @@ public class ShopScene extends Scene {
             // --- FILA DE POCIONES ---
             GameObject pocionRoja = new GameObject("PocionRoja", new Transform(new org.joml.Vector2f(100, 150), new org.joml.Vector2f(48, 48),1));
             pocionRoja.addComponent(new SpriteRenderer(propsSprites.getSprite(0)));
+            pocionRoja.addComponent(new ItemPickup("Poción de Vida Menor",1));
             this.addGameObjectToScene(pocionRoja);
 
             GameObject vialVerde = new GameObject("VialVerde", new Transform(new org.joml.Vector2f(160, 150), new org.joml.Vector2f(48, 48),1));

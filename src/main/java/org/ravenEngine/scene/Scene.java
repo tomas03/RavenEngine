@@ -12,6 +12,7 @@ import org.ravenEngine.physics.CollisionPair;
 import org.ravenEngine.renderer.Camera;
 import org.ravenEngine.renderer.DebugDraw;
 import org.ravenEngine.renderer.Renderer;
+import org.ravenEngine.renderer.SpriteRenderer;
 import org.ravenEngine.util.ComponentDeserializer;
 import org.ravenEngine.util.ComponentSerializer;
 
@@ -28,6 +29,7 @@ public abstract class Scene {
     protected Renderer renderer;
     private boolean isRunning = false;
     private  List<BoxCollider2D> colliders = new ArrayList<>();
+    private final List<GameObject> pendingToDestroy = new ArrayList<>();
 
     //debug mode
     // Control de visualización de debug
@@ -62,6 +64,30 @@ public abstract class Scene {
         if (KeyListener.keyBeginPress(org.lwjgl.glfw.GLFW.GLFW_KEY_F3)) {
             debugMode = !debugMode;
             System.out.println("[Scene] Debug Mode cambiado a: " + debugMode);
+        }
+
+        // Limpieza de objetos destruidos al final del frame
+        if (!this.pendingToDestroy.isEmpty()) {
+            for (GameObject go : this.pendingToDestroy) {
+                // 1. Quitar de la lista de GameObjects
+                this.gameObjects.remove(go);
+
+                // 2. Quitar colisiones si tenía
+                BoxCollider2D col = go.getComponent(BoxCollider2D.class);
+                if (col != null) {
+                    this.colliders.remove(col);
+                }
+            }
+
+            // 3. Reconstruir el renderer con las entidades vivas
+            if (this.renderer != null) {
+                this.renderer.clear();
+                for (GameObject go : this.gameObjects) {
+                    this.renderer.add(go);
+                }
+            }
+
+            this.pendingToDestroy.clear();
         }
 
         for (GameObject go : gameObjects) {
@@ -153,6 +179,7 @@ public abstract class Scene {
         }
     }
 
+
     //AGREGAR OBJETO A LA ESCENA
     public void addGameObjectToScene(GameObject go) {
         if (!this.gameObjects.contains(go)) {
@@ -167,6 +194,13 @@ public abstract class Scene {
         if (isRunning) {
             go.start();
             this.renderer.add(go);
+        }
+    }
+
+    //DESTRUIR OBJETOS DE LA ESCENA
+    public void destroyGameObject(GameObject go) {
+        if (go != null && !this.pendingToDestroy.contains(go)) {
+            this.pendingToDestroy.add(go);
         }
     }
 
