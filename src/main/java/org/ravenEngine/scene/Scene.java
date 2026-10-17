@@ -2,6 +2,7 @@ package org.ravenEngine.scene;
 
 import com.google.gson.*;
 import org.joml.Vector2f;
+import org.joml.Vector3f;
 import org.ravenEngine.components.BoxCollider2D;
 import org.ravenEngine.components.CameraFollow;
 import org.ravenEngine.components.Tilemap;
@@ -16,10 +17,7 @@ import org.ravenEngine.util.ComponentSerializer;
 
 import java.io.*;
 import java.lang.reflect.Modifier;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F1;
 
@@ -142,18 +140,22 @@ public abstract class Scene {
             System.err.println("[Scene] Error al cargar la escena: " + e.getMessage());
             e.printStackTrace();
         }
+        // Asegúrate de vaciar ambas listas antes de cargar:
+        this.gameObjects.clear();
+        this.colliders.clear();
     }
 
     //AGREGAR OBJETO A LA ESCENA
     public void addGameObjectToScene(GameObject go) {
-        this.gameObjects.add(go);
-
-        // OBLIGATORIO: Si el GameObject tiene un BoxCollider2D, sumarlo a la lista de colisiones
-        BoxCollider2D collider = go.getComponent(BoxCollider2D.class);
-        if (collider != null) {
-            this.colliders.add(collider);
+        if (!this.gameObjects.contains(go)) {
+            this.gameObjects.add(go);
         }
 
+        // Solo agregamos a la lista de físicas si tiene el componente y no estaba ya
+        BoxCollider2D col = go.getComponent(BoxCollider2D.class);
+        if (col != null && !this.colliders.contains(col)) {
+            this.colliders.add(col);
+        }
         if (isRunning) {
             go.start();
             this.renderer.add(go);
@@ -161,7 +163,7 @@ public abstract class Scene {
     }
 
     public void render() {
-        // 1. Dibujamos el piso/tilemaps de fondo
+        // 1. El suelo siempre se dibuja primero y al fondo de todoo
         for (GameObject go : this.gameObjects) {
             Tilemap tm = go.getComponent(Tilemap.class);
             if (tm != null) {
@@ -169,12 +171,25 @@ public abstract class Scene {
             }
         }
 
-        // 2. Dibujamos las entidades (personaje, mostrador, pociones)
+        // 2. Y-SORTING: Ordenamos las entidades de mayor Y a menor Y
+        // (Los que están más arriba en pantalla se renderizan antes; los de abajo se renderizan encima)
+        this.gameObjects.sort((a, b) -> {
+            // Excluimos tilemaps del ordenamiento
+            if (a.getComponent(Tilemap.class) != null) return -1;
+            if (b.getComponent(Tilemap.class) != null) return 1;
+
+            // Comparamos el eje Y de la base (pies) de cada objeto
+            float yA = a.transform.pos.y;
+            float yB = b.transform.pos.y;
+
+            return Float.compare(yB, yA); // Orden descendente
+        });
+
+        // 3. Renderizamos las entidades ordenadas
         this.renderer.render(this.camera);
 
-        // 3. Gizmos y colisiones solo si el debug está activo
+        // 4. Debug bounds y gizmos al final
         if (debugMode) {
-            // Encolamos las cajas rojas de las baldosas sólidas
             for (GameObject go : this.gameObjects) {
                 Tilemap tm = go.getComponent(Tilemap.class);
                 if (tm != null) {
@@ -182,11 +197,15 @@ public abstract class Scene {
                 }
             }
 
-            // Dibuja en pantalla todas las líneas acumuladas (colliders verdes + tiles rojos)
+            for (BoxCollider2D col : this.colliders) {
+                Vector2f min = new Vector2f(col.getMinX(), col.getMinY());
+                Vector2f max = new Vector2f(col.getMaxX(), col.getMaxY());
+                DebugDraw.addBox2D(min, max, new Vector3f(0.0f, 1.0f, 0.0f));
+            }
+
             DebugDraw.draw(this.camera);
         }
 
-        // Siempre limpiamos el buffer para que no se acumulen líneas en memoria
         DebugDraw.beginFrame();
     }
 
@@ -194,11 +213,11 @@ public abstract class Scene {
         if (collider.isStatic() || tilemap == null || tilemap.gameObject == null) return;
 
         Vector2f tilemapOrigin = tilemap.gameObject.transform.pos;
-        // Si tus variables son privadas con getter usa getTileWidth(), sino el campo directo
+        // Si tus variables son privadas con getter usa getTileWidth(), si no el campo directo
         int tileW = tilemap.getTileWidth();
         int tileH = tilemap.getTileHeight();
 
-        // Convertimos la caja del personaje a rango de celdas de la grilla
+        // Convertimos la caja del personaje a rango de celdas de la grilla.
         int minTileX = (int) Math.floor((collider.getMinX() - tilemapOrigin.x) / tileW);
         int maxTileX = (int) Math.floor((collider.getMaxX() - tilemapOrigin.x) / tileW);
         int minTileY = (int) Math.floor((collider.getMinY() - tilemapOrigin.y) / tileH);
@@ -267,7 +286,9 @@ public abstract class Scene {
 
         GameObject[] objects = gson.fromJson(jsonContent, GameObject[].class);
         if (objects != null) {
+            // 1. LIMPIEZA TOTAL DE ESTADOS ANTERIORES
             this.gameObjects.clear();
+            this.colliders.clear(); // <-- ¡ESTA LÍNEA LIQUIDA LOS FANTASMAS!
             if (this.renderer != null) {
                 this.renderer.clear();
             }
@@ -277,16 +298,20 @@ public abstract class Scene {
                     for (Component c : go.getComponents()) {
                         c.gameObject = go;
 
-                        // 1. Inyectamos la cámara al restaurar snapshot
+                        // Inyectamos la cámara al restaurar snapshot
                         if (c instanceof CameraFollow) {
                             ((CameraFollow) c).setCamera(this.camera);
                         }
                     }
                 }
+
+                // Registra el GO en gameObjects, colliders y renderer
                 this.addGameObjectToScene(go);
 
-                // 2. Rearmamos buffers y estados
-                go.start();
+                // Si isRunning no estaba en true adentro de addGameObjectToScene, aseguramos start
+                if (!isRunning) {
+                    go.start();
+                }
             }
         }
     }
@@ -490,6 +515,7 @@ public abstract class Scene {
             }
         }
     }
+
 
     //GETTERS Y SETTERS
     public void toggleDebugMode() {

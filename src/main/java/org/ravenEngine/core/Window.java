@@ -1,5 +1,6 @@
 package org.ravenEngine.core;
 
+import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
 import org.ravenEngine.editor.ImGuiLayer;
@@ -105,11 +106,25 @@ public class Window {
     }
 
     public void cleanup() {
+        // 1. Destruimos primero la capa de ImGui
         if (imGuiLayer != null) {
             imGuiLayer.destroy();
         }
+
+        // 2. Liberamos todos los callbacks asociados a la ventana (mouse, teclado, etc.)
+        Callbacks.glfwFreeCallbacks(windowHandle);
+
+        // 3. Destruimos la ventana de GLFW
         glfwDestroyWindow(windowHandle);
+
+        // 4. Terminamos GLFW
         glfwTerminate();
+
+        // 5. Liberamos el manejador de errores de GLFW para que no tire excepción
+        var errorCb = glfwSetErrorCallback(null);
+        if (errorCb != null) {
+            errorCb.free();
+        }
     }
 
     // Getters útiles para el resto del motor

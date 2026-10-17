@@ -38,20 +38,24 @@ public class Engine {
     public void start(Scene initialScene) {
         window.init();
 
-        // 1. Instanciar el framebuffer AHORA que OpenGL ya existe en la GPU
         this.framebuffer = new FrameBuffer(1280, 720);
 
         isRunning = true;
         changeScene(initialScene);
 
-        // 2. Recién acá arranca el loop del juego
+        // Bucle del motor
         runLoop();
 
-        // 3. Cuando se cierra la ventana, se limpia todoo
+        // Limpieza de FrameBuffer
         if (framebuffer != null) {
             framebuffer.destroy();
         }
+
+        // Limpieza de ventana y GLFW
         cleanup();
+
+        // Mata el proceso de Java al instante: no quedan procesos zombies en RAM
+        System.exit(0);
     }
 
     private void update(float dt) {
@@ -68,15 +72,14 @@ public class Engine {
             double currentFrameTime = glfwGetTime();
             float deltaTime = (float) (currentFrameTime - lastFrameTime);
             lastFrameTime = currentFrameTime;
-            //Limpiar lineas de fotograma anterior SIEMPRE
+
             DebugDraw.beginFrame();
-            //DIBUJAR LA ESCENA ADENTRO DEL FRAMEBUFFER
+
             framebuffer.bind();
             glClearColor(0.08f, 0.09f, 0.12f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
-            //CREAR VENTANA
+
             ImGuiLayer gui = window.getImGuiLayer();
-            // 1. Agregar la caja si hay un objeto seleccionado
             if (gui != null && gui.getSelectedGameObject() != null) {
                 GameObject selected = gui.getSelectedGameObject();
                 if (selected.transform != null) {
@@ -88,7 +91,7 @@ public class Engine {
                     DebugDraw.addBox2D(min, max, new Vector3f(1.0f, 0.84f, 0.0f));
                 }
             }
-            // 2. Renderizar sprites del juego
+
             if (currentScene != null) {
                 if (isPlaying && !isPaused) {
                     currentScene.update(deltaTime);
@@ -96,11 +99,16 @@ public class Engine {
                 currentScene.render();
             }
             framebuffer.unbind();
-            // 2. LIMPIAR LA PANTALLA PRINCIPAL DEL MONITOR
+
             glClearColor(0.15f, 0.15f, 0.18f, 1.0f);
             glClear(GL_COLOR_BUFFER_BIT);
-            // 3. DIBUJAR IMGUI (QUE CONTIENE LA VENTANA CON LA TEXTURA)
-            window.update(deltaTime, framebuffer,currentScene);
+
+            // Si la ventana pidió cerrarse mientras se procesaban las colisiones o inputs, salimos
+            if (window.shouldClose()) {
+                break;
+            }
+
+            window.update(deltaTime, framebuffer, currentScene);
             MouseListener.endFrame();
         }
     }

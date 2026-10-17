@@ -112,7 +112,7 @@ public class ShopScene extends Scene {
             this.addGameObjectToScene(mostrador);
 
             // --- CREAR GO DEL PJ ---
-            GameObject jugador = new GameObject("RavenTom", new Transform(new org.joml.Vector2f(360, 95), new org.joml.Vector2f(48, 54), 1));
+            GameObject jugador = new GameObject("RavenTom", new Transform(new org.joml.Vector2f(360, 170), new org.joml.Vector2f(48, 54), 1));
             jugador.addComponent(new SpriteRenderer(playerSprites.getSprite(1))); // Frame quieto mirando al frente
 
             // --- SISTEMA DE ANIMACIONES (3 frames por ciclo según tu spritesheet) ---
@@ -172,10 +172,10 @@ public class ShopScene extends Scene {
             jugador.addComponent(new CameraFollow(this.camera, viewportSize, 6.0f));
 
             // --- COLISIONES ---
-            Vector2f playerColliderSize = new Vector2f(24.0f, 34.0f);
-            Vector2f playerColliderOffset = new Vector2f(12.0f, 12.0f);
-            jugador.addComponent(new BoxCollider2D(playerColliderSize, playerColliderOffset));
-
+            BoxCollider2D playerCollider = new BoxCollider2D();
+            playerCollider.setSize(new Vector2f(30.0f,14.0f));
+            playerCollider.setOffset(new Vector2f(9.0f,2.0f));
+            jugador.addComponent(playerCollider);
             this.addGameObjectToScene(jugador);
         }
         //FORZAR PRUEBA DE COLISIÓN(corre siempre, incluso cargando desde JSON)
@@ -189,6 +189,17 @@ public class ShopScene extends Scene {
                 tm.setTile(12, 2, 1);
                 tm.setTile(12, 3, 1);
                 tm.setTile(12, 4, 1);
+                break;
+            }
+        }
+        // --- CALIBRAR PIES DE RAVENTOM (corre siempre) ---
+        for (GameObject go : this.gameObjects) {
+            if (go.getName().equals("RavenTom")) {
+                BoxCollider2D col = go.getComponent(BoxCollider2D.class);
+                if (col != null) {
+                    col.setSize(new Vector2f(30.0f, 14.0f));
+                    col.setOffset(new Vector2f(9.0f, 2.0f));
+                }
                 break;
             }
         }

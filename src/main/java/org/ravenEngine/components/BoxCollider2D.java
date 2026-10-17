@@ -6,8 +6,8 @@ import org.ravenEngine.renderer.DebugDraw;
 import org.ravenEngine.scene.Component;
 
 public class BoxCollider2D extends Component {
-    private Vector2f size;
-    private Vector2f offset;
+    private Vector2f size = new Vector2f(32.0f, 16.0f);
+    private Vector2f offset = new Vector2f(8.0f, 0.0f);
     private boolean isTrigger = false;
     private boolean isStatic = false;
 
@@ -19,7 +19,11 @@ public class BoxCollider2D extends Component {
     public BoxCollider2D(Vector2f size) {
         this(size, new Vector2f(0.0f, 0.0f), true,false);
     }
-
+    // Constructor por defecto (vital para Gson y creación simple)
+    public BoxCollider2D() {
+        this.offset = new Vector2f(0.0f, 0.0f);
+        this.size = new Vector2f(32.0f, 32.0f);
+    }
     public BoxCollider2D(Vector2f size, Vector2f offset) {
         this(size, offset, false,false);
     }
@@ -74,4 +78,6 @@ public class BoxCollider2D extends Component {
 
     public Vector2f getSize() { return size; }
     public Vector2f getOffset() { return offset; }
+    public void setSize(Vector2f size) {this.size = size;}
+    public void setOffset(Vector2f offset) {this.offset = offset;}
 }
