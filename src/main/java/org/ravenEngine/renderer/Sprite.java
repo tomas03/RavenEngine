@@ -3,7 +3,7 @@ package org.ravenEngine.renderer;
 import org.joml.Vector2f;
 
 public class Sprite {
-    private final Texture texture;
+    private Texture texture;
     private Vector2f[] texCoords;
 
     public Sprite(Texture texture) {
@@ -33,6 +33,9 @@ public class Sprite {
                 new Vector2f(texCoords[0].x, texCoords[3].y)  // Arriba Izquierda toma la X derecha
         };
         return new Sprite(this.texture, flipped);
+    }
+    public void setTexture(Texture texture) {
+        this.texture = texture;
     }
 
     public void setTexCoords(Vector2f[] texCoords) {this.texCoords = texCoords;}

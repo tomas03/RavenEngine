@@ -25,6 +25,11 @@ public class ImGuiLayer {
     private final SceneHierarchy sceneHierarchy = new SceneHierarchy();
     private final InspectorWindow inspectorWindow = new InspectorWindow();
 
+    // Variables para control de editor en ImGuiLayer.java
+    private Vector2f lastMousePos = new Vector2f();
+    private boolean isDraggingObject = false;
+    private Vector2f dragOffset = new Vector2f();
+
     private String sceneSnapshot = null;
 
     // --- VARIABLES DEL SISTEMA DE PINCEL (TILEMAP) ---
@@ -131,8 +136,43 @@ public class ImGuiLayer {
                 float ndcY = -((v * 2.0f) - 1.0f);
 
                 if (currentScene != null && currentScene.getCamera() != null) {
-                    Vector2f worldCoords = currentScene.getCamera().screenToWorld(localX, localY, windowSize.x, windowSize.y);
+                    var camera = currentScene.getCamera();
+                    Vector2f worldCoords = camera.screenToWorld(localX, localY, windowSize.x, windowSize.y);
 
+                    // ---------------------------------------------------------
+                    // 1. PANEO DE CÁMARA (Solo en Edición)
+                    // Con Ruedita (botón 2) siempre, o Clic Derecho (botón 1) fuera del modo tiles
+                    // ---------------------------------------------------------
+                    boolean panButtonDown = ImGui.isMouseDown(2) || (!tileEditMode && ImGui.isMouseDown(1));
+
+                    if (!Engine.IsPlaying() && panButtonDown) {
+                        float dx = mousePos.x - lastMousePos.x;
+                        float dy = mousePos.y - lastMousePos.y;
+
+                        // Estimamos el factor de escala pantalla -> mundo
+                        float worldUnitsPerPixelX = 640.0f / windowSize.x;
+                        float worldUnitsPerPixelY = 360.0f / windowSize.y;
+
+                        // Desplazamos la posición de la cámara (OpenGL invierte Y)
+                        camera.position.x -= dx * worldUnitsPerPixelX;
+                        camera.position.y += dy * worldUnitsPerPixelY;
+                    }
+
+                    // ---------------------------------------------------------
+                    // ZOOM CON LA RUEDA (Solo en Modo Edición / Pausado)
+                    // ---------------------------------------------------------
+                    if (!Engine.IsPlaying() || Engine.IsPaused()) {
+                        float wheel = ImGui.getIO().getMouseWheel();
+                        if (wheel != 0.0f) {
+                            // wheel > 0: rueda hacia adelante (acercar)
+                            // wheel < 0: rueda hacia atrás (alejar)
+                            camera.addZoom(wheel);
+                        }
+                    }
+
+                    // ---------------------------------------------------------
+                    // 2. MODOS DE INTERACCIÓN (Tiles vs GameObjects)
+                    // ---------------------------------------------------------
                     if (tileEditMode && activeTilemap != null) {
                         // --- MODO PINTAR / BORRAR TILES (Arrastre continuo) ---
                         Vector2f grid = activeTilemap.worldToGrid(worldCoords.x, worldCoords.y);
@@ -152,12 +192,39 @@ public class ImGuiLayer {
                             }
                         }
                     } else {
-                        // --- MODO SELECCIÓN CLÁSICO (Picking de GameObjects) ---
+                        // --- MODO SELECCIÓN Y ARRASTRE DE GAMEOBJECTS ---
+                        GameObject selected = getSelectedGameObject();
+
+                        // A. Al hacer clic izquierdo: pick y calcular desfasaje (offset)
                         if (ImGui.isMouseClicked(0)) {
                             pickObjectAt(worldCoords.x, worldCoords.y, currentScene);
+                            selected = getSelectedGameObject();
+
+                            if (selected != null && selected.transform != null) {
+                                isDraggingObject = true;
+                                dragOffset.set(
+                                        worldCoords.x - selected.transform.pos.x,
+                                        worldCoords.y - selected.transform.pos.y
+                                );
+                            }
+                        }
+
+                        // B. Mientras mantenga apretado: arrastrar el objeto seleccionado
+                        if (!Engine.IsPlaying() && isDraggingObject && ImGui.isMouseDown(0)) {
+                            if (selected != null && selected.transform != null) {
+                                selected.transform.pos.x = worldCoords.x - dragOffset.x;
+                                selected.transform.pos.y = worldCoords.y - dragOffset.y;
+                            }
+                        } else if (!ImGui.isMouseDown(0)) {
+                            isDraggingObject = false;
                         }
                     }
+
+                    // Guardamos la última posición del cursor para el delta del próximo frame
+                    lastMousePos.set(mousePos.x, mousePos.y);
                 }
+            } else {
+                isDraggingObject = false;
             }
         }
 
@@ -243,11 +310,14 @@ public class ImGuiLayer {
             if (!isPlaying) {
                 if (currentScene != null) {
                     sceneSnapshot = currentScene.serializeToString();
-                    System.out.println("[IDE] Snapshot de escena guardado en memoria.");
+
+                    // 1. Devolvemos la cámara al zoom base 1.0x para jugar
+                    if (currentScene.getCamera() != null) {
+                        currentScene.getCamera().resetZoom();
+                    }
                 }
                 Engine.setPlaying(true);
                 Engine.setPaused(false);
-                System.out.println("Simulación iniciada.");
             }
         }
         if (isPlaying && !isPaused) ImGui.popStyleColor();

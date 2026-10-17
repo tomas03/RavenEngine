@@ -17,6 +17,7 @@ import org.ravenEngine.util.ComponentSerializer;
 
 import java.io.*;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_F1;
@@ -74,30 +75,9 @@ public abstract class Scene {
 
     //GUARDADO
     public void save(String filePath) {
-        File file = new File(filePath);
-        if (file.getParentFile() != null && !file.getParentFile().exists()) {
-            file.getParentFile().mkdirs();
-        }
-
-        Gson gson = new GsonBuilder()
-                .setPrettyPrinting()
-                .registerTypeAdapter(Component.class, new ComponentSerializer())
-                .registerTypeAdapter(Component.class, new ComponentDeserializer())
-                .excludeFieldsWithModifiers(java.lang.reflect.Modifier.TRANSIENT | java.lang.reflect.Modifier.STATIC)
-                .create();
-
-        try (FileWriter writer = new FileWriter(filePath)) {
-            writer.write(gson.toJson(this.gameObjects));
-            System.out.println("[Scene] Escena guardada exitosamente en: " + filePath);
-        } catch (IOException e) {
-            System.err.println("[Scene] Error al guardar la escena: " + e.getMessage());
-            e.printStackTrace();
-        }
-    }
-    public void load(String filePath) {
-        File file = new File(filePath);
-        if (!file.exists()) {
-            System.out.println("[Scene] No se encontró el archivo de escena: " + filePath + ". Se mantendrá la escena base.");
+        // 1. Evitar guardar si estamos en Play (para no congelar posiciones en movimiento)
+        if (org.ravenEngine.core.Engine.IsPlaying()) {
+            System.err.println("[Alerta] No se puede guardar la escena mientras la simulación está activa.");
             return;
         }
 
@@ -108,21 +88,49 @@ public abstract class Scene {
                 .excludeFieldsWithModifiers(java.lang.reflect.Modifier.TRANSIENT | java.lang.reflect.Modifier.STATIC)
                 .create();
 
-        try (FileReader reader = new FileReader(filePath)) {
+        // 2. Serializamos a String en memoria primero
+        String jsonOutput = gson.toJson(this.gameObjects.toArray(new GameObject[0]));
+
+        // 3. Escribimos al disco garantizando UTF-8 y cierre inmediato del flujo
+        try (BufferedWriter writer = new BufferedWriter(
+                new OutputStreamWriter(new FileOutputStream(filePath), StandardCharsets.UTF_8))) {
+            writer.write(jsonOutput);
+            writer.flush();
+            System.out.println("[Motor] Escena guardada correctamente en: " + filePath);
+        } catch (Exception e) {
+            System.err.println("[Error] Falló el guardado del archivo JSON: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+    public void load(String filePath) {
+        File file = new File(filePath);
+        if (!file.exists()) {
+            System.out.println("[Scene] No se encontró el archivo de escena: " + filePath + ". Se mantendrá la escena base.");
+            return;
+        }
+
+        // 1. VACIAR LISTAS ANTES DE CARGAR (Arriba, nunca al final)
+        this.gameObjects.clear();
+        this.colliders.clear();
+        if (this.renderer != null) {
+            this.renderer.clear();
+        }
+
+        Gson gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .registerTypeAdapter(Component.class, new ComponentSerializer())
+                .registerTypeAdapter(Component.class, new ComponentDeserializer())
+                .excludeFieldsWithModifiers(java.lang.reflect.Modifier.TRANSIENT | java.lang.reflect.Modifier.STATIC)
+                .create();
+
+        try (FileReader reader = new FileReader(file)) {
             GameObject[] objects = gson.fromJson(reader, GameObject[].class);
             if (objects != null) {
-                this.gameObjects.clear();
-
-                if (this.renderer != null) {
-                    this.renderer.clear();
-                }
-
                 for (GameObject go : objects) {
                     if (go.getComponents() != null) {
                         for (Component c : go.getComponents()) {
                             c.gameObject = go;
 
-                            // 1. Inyectamos la cámara de la escena si es el script de seguimiento
                             if (c instanceof CameraFollow) {
                                 ((CameraFollow) c).setCamera(this.camera);
                             }
@@ -130,9 +138,12 @@ public abstract class Scene {
                     }
 
                     this.addGameObjectToScene(go);
-
-                    // 2. Iniciamos el objeto para que inicialice buffers (como el Tilemap)
                     go.start();
+
+                    // Aseguramos que los sprites queden registrados en el renderer
+                    if (this.renderer != null) {
+                        this.renderer.add(go);
+                    }
                 }
                 System.out.println("[Scene] Escena cargada con " + objects.length + " entidades desde: " + filePath);
             }
@@ -140,9 +151,6 @@ public abstract class Scene {
             System.err.println("[Scene] Error al cargar la escena: " + e.getMessage());
             e.printStackTrace();
         }
-        // Asegúrate de vaciar ambas listas antes de cargar:
-        this.gameObjects.clear();
-        this.colliders.clear();
     }
 
     //AGREGAR OBJETO A LA ESCENA

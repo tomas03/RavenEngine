@@ -13,9 +13,15 @@ import static org.lwjgl.stb.STBImage.*;
 
 public class Texture {
     private final String filepath;
-    private int textureId;
+    private transient int textureId;
     private int width;
     private int height;
+
+    // Constructor vacío por defecto para que Gson no rompa
+    public Texture() {
+        this.filepath = "";
+        this.textureId = 0;
+    }
 
     public Texture(String resourcePath) {
         this.filepath = resourcePath;
