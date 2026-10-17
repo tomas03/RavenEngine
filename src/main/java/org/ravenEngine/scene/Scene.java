@@ -169,15 +169,77 @@ public abstract class Scene {
             }
         }
 
+        // 2. Dibujamos las entidades (personaje, mostrador, pociones)
         this.renderer.render(this.camera);
 
-        // Solo dibujamos los gizmos si el debug está activo
+        // 3. Gizmos y colisiones solo si el debug está activo
         if (debugMode) {
+            // Encolamos las cajas rojas de las baldosas sólidas
+            for (GameObject go : this.gameObjects) {
+                Tilemap tm = go.getComponent(Tilemap.class);
+                if (tm != null) {
+                    tm.drawDebugBounds();
+                }
+            }
+
+            // Dibuja en pantalla todas las líneas acumuladas (colliders verdes + tiles rojos)
             DebugDraw.draw(this.camera);
         }
 
-        // Siempre limpiamos el buffer para que no se acumulen líneas invisibles en memoria
+        // Siempre limpiamos el buffer para que no se acumulen líneas en memoria
         DebugDraw.beginFrame();
+    }
+
+    private void resolveTilemapCollisions(BoxCollider2D collider, Tilemap tilemap) {
+        if (collider.isStatic() || tilemap == null || tilemap.gameObject == null) return;
+
+        Vector2f tilemapOrigin = tilemap.gameObject.transform.pos;
+        // Si tus variables son privadas con getter usa getTileWidth(), sino el campo directo
+        int tileW = tilemap.getTileWidth();
+        int tileH = tilemap.getTileHeight();
+
+        // Convertimos la caja del personaje a rango de celdas de la grilla
+        int minTileX = (int) Math.floor((collider.getMinX() - tilemapOrigin.x) / tileW);
+        int maxTileX = (int) Math.floor((collider.getMaxX() - tilemapOrigin.x) / tileW);
+        int minTileY = (int) Math.floor((collider.getMinY() - tilemapOrigin.y) / tileH);
+        int maxTileY = (int) Math.floor((collider.getMaxY() - tilemapOrigin.y) / tileH);
+
+        // Revisamos únicamente las baldosas que el personaje está pisando
+        for (int tx = minTileX; tx <= maxTileX; tx++) {
+            for (int ty = minTileY; ty <= maxTileY; ty++) {
+                if (!tilemap.isSolid(tx, ty)) continue;
+
+                float tileMinX = tilemapOrigin.x + (tx * tileW);
+                float tileMaxX = tileMinX + tileW;
+                float tileMinY = tilemapOrigin.y + (ty * tileH);
+                float tileMaxY = tileMinY + tileH;
+
+                // Recalculamos con la posición actual del collider
+                float curMinX = collider.getMinX();
+                float curMaxX = collider.getMaxX();
+                float curMinY = collider.getMinY();
+                float curMaxY = collider.getMaxY();
+
+                float overlapLeft   = curMaxX - tileMinX;
+                float overlapRight  = tileMaxX - curMinX;
+                float overlapBottom = curMaxY - tileMinY;
+                float overlapTop    = tileMaxY - curMinY;
+
+                if (overlapLeft > 0 && overlapRight > 0 && overlapBottom > 0 && overlapTop > 0) {
+                    float overlapX = Math.min(overlapLeft, overlapRight);
+                    float overlapY = Math.min(overlapBottom, overlapTop);
+
+                    // Empujamos en el eje de menor penetración para sacarlo de la pared
+                    if (overlapX < overlapY) {
+                        float resolveX = (overlapLeft < overlapRight) ? -overlapX : overlapX;
+                        collider.gameObject.transform.pos.x += resolveX;
+                    } else {
+                        float resolveY = (overlapBottom < overlapTop) ? -overlapY : overlapY;
+                        collider.gameObject.transform.pos.y += resolveY;
+                    }
+                }
+            }
+        }
     }
 
     //SERIALIZACIÓN EN MEMORIA
@@ -231,25 +293,42 @@ public abstract class Scene {
 
     //CHEQUEAR COLISIONES
     public void checkCollisions() {
-        currentCollisions.clear();
+        // -------------------------------------------------------------
+        // 1. COLISIÓN CONTRA EL TILEMAP (Paredes y obstáculos del mapa)
+        // -------------------------------------------------------------
+        Tilemap activeTilemap = null;
+        for (GameObject go : this.gameObjects) {
+            Tilemap tm = go.getComponent(Tilemap.class);
+            if (tm != null) {
+                activeTilemap = tm;
+                break;
+            }
+        }
 
+        if (activeTilemap != null) {
+            for (BoxCollider2D col : colliders) {
+                if (!col.isStatic()) {
+                    resolveTilemapCollisions(col, activeTilemap);
+                }
+            }
+        }
+
+        // -------------------------------------------------------------
+        // 2. COLISIÓN ENTRE ENTIDADES (Mostrador, pociones, etc.)
+        // -------------------------------------------------------------
+        currentCollisions.clear();
         for (int i = 0; i < colliders.size(); i++) {
             BoxCollider2D colA = colliders.get(i);
-
             for (int j = i + 1; j < colliders.size(); j++) {
                 BoxCollider2D colB = colliders.get(j);
-
                 if (checkAABB(colA, colB)) {
                     CollisionPair pair = new CollisionPair(colA, colB);
                     currentCollisions.add(pair);
-
                     boolean isTriggerInteraction = colA.isTrigger() || colB.isTrigger();
-
                     if (!isTriggerInteraction) {
                         // Solo resolvemos la posición si ambos son sólidos
                         resolvePhysicsCollision(colA, colB);
                     }
-
                     // Despacho de Enter vs Stay
                     if (!activeCollisions.contains(pair)) {
                         notifyCollisionEnter(colA, colB, isTriggerInteraction);
@@ -384,7 +463,30 @@ public abstract class Scene {
                 if (!tilemap.isSolid(tx,ty)) continue;
 
                 //AABB de la baldosa sólida actual
-                
+                float tileMinX = tilemapOrigin.x + (tx*tileW);
+                float tileMaxX = tileMinX + tileW;
+                float tileMinY = tilemapOrigin.y + (ty*tileH);
+                float tileMaxY = tileMinY + tileH;
+
+                //Chequeo de penetración
+                float overlapLeft = collider.getMaxX() - tileMinX;
+                float overlapRight =  tileMinX - collider.getMinX();
+                float overlapBottom = collider.getMaxY() - tileMinY;
+                float overlapTop = tileMaxY - collider.getMinY();
+
+                if (overlapLeft>0&&overlapRight>0&&overlapBottom>0&&overlapTop>0){
+                    float overlapX = Math.min(overlapLeft,overlapRight);
+                    float overlapY = Math.min(overlapBottom,overlapTop);
+
+                    //Empujar en el eje donde la penetración sea menor
+                    if (overlapX<overlapY){
+                        float resolveX = (overlapLeft<overlapRight) ? -overlapX : overlapX;
+                        collider.gameObject.transform.pos.x +=resolveX;
+                    }else{
+                        float resolveY = (overlapBottom<overlapTop) ? -overlapY : overlapY;
+                        collider.gameObject.transform.pos.y += resolveY;
+                    }
+                }
             }
         }
     }

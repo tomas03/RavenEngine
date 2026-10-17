@@ -1,11 +1,9 @@
 package org.ravenEngine.components;
 
 import org.joml.Vector2f;
+import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
-import org.ravenEngine.renderer.Camera;
-import org.ravenEngine.renderer.Shader;
-import org.ravenEngine.renderer.Sprite;
-import org.ravenEngine.renderer.Spritesheet;
+import org.ravenEngine.renderer.*;
 import org.ravenEngine.scene.Component;
 import org.ravenEngine.util.AssetPool;
 
@@ -81,7 +79,6 @@ public class Tilemap extends Component {
                     this.numSprites, this.spriteSpacing
             );
         }
-
         initBuffers();
         this.isDirty = true;
     }
@@ -104,7 +101,7 @@ public class Tilemap extends Component {
             int offsetArrayIndex = 6 * i;
             int offset = 4 * i;
 
-            indices[offsetArrayIndex]     = offset + 0;
+            indices[offsetArrayIndex] = offset + 0;
             indices[offsetArrayIndex + 1] = offset + 1;
             indices[offsetArrayIndex + 2] = offset + 3;
             indices[offsetArrayIndex + 3] = offset + 1;
@@ -242,6 +239,29 @@ public class Tilemap extends Component {
         shader.detach();
     }
 
+    public void drawDebugBounds() {
+        Vector2f origin = this.gameObject.transform.pos;
+
+        for (int y = 0; y < this.rows; y++) {
+            for (int x = 0; x < this.columns; x++) {
+                int tileId = getTile(x, y);
+
+                // Si es un tile sólido (o está fuera de límites si lockMapBounds está activo)
+                if (tileId >= 0 && solidTilesIndices.contains(tileId)) {
+                    float posX = origin.x + (x * this.tileWidth);
+                    float posY = origin.y + (y * this.tileHeight);
+
+                    Vector2f min = new Vector2f(posX, posY);
+                    Vector2f max = new Vector2f(posX + this.tileWidth, posY + this.tileHeight);
+                    Vector3f red = new Vector3f(1.0f, 0.0f, 0.0f);
+
+                    DebugDraw.addBox2D(min, max, red);
+                }
+            }
+        }
+    }
+
+    //GETTERS Y SETTERS
     public void settileSolid(int tileIndex, boolean isSolid){
         if (isSolid){
             solidTilesIndices.add(tileIndex);

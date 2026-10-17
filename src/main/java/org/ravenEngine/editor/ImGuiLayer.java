@@ -80,13 +80,13 @@ public class ImGuiLayer {
         ImGui.begin("Herramientas");
         ImGui.text("RavenEngine IDE");
         ImGui.separator();
-        ImGui.text(String.format("FPS: %.1f", 1.0f / dt));
-        ImGui.text(String.format("Frame Time: %.3f ms", dt * 1000.0f));
-        ImGui.separator();
-
         // Selector de Modo: Inspección vs. Pincel
-        if (ImGui.checkbox("Modo Pincel de Tiles", tileEditMode)) {
-            tileEditMode = !tileEditMode;
+        if (ImGui.button("Modo Pincel de Tiles")) {
+            if (!tileEditMode){
+                tileEditMode = true;
+            }else {
+                tileEditMode = false;
+            }
         }
 
         if (tileEditMode) {

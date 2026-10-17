@@ -39,13 +39,23 @@ public class ShopScene extends Scene {
             GameObject tilemapObj = new GameObject("tilemap_piso",new Transform(new Vector2f(0,0)),-1);
             //2 Parametros columns,rows,tileWidth,tileHeight,path , numsprites y spacing
             // Pruebá con tiles de 32x32 o 16x16 en un mapa proporcional de 20x11
-            Tilemap tilemap = new Tilemap(40, 22, 32, 32, "textures/wood_floor.png", 1, 0);
+            Tilemap tilemap = new Tilemap(20, 11, 32, 32, "textures/wood_floor.png", 1, 0);
+
+            // Marcamos el tile 1 como pared sólida
+            tilemap.settileSolid(1, true);
+
+// Pintamos una pared de 3 tiles al lado del mostrador
+            tilemap.setTile(5, 5, 1);
+            tilemap.setTile(6, 5, 1);
+            tilemap.setTile(7, 5, 1);
+
             //un for que llena con el tile0(en este caso el piso)
             for (int x=0;x<15;x++){
                 for (int y = 0;y<10;y++){
                     tilemap.setTile(x,y,0);
                 }
             }
+
 
             tilemapObj.addComponent(tilemap);
             this.addGameObjectToScene(tilemapObj);
@@ -167,6 +177,20 @@ public class ShopScene extends Scene {
             jugador.addComponent(new BoxCollider2D(playerColliderSize, playerColliderOffset));
 
             this.addGameObjectToScene(jugador);
+        }
+        //FORZAR PRUEBA DE COLISIÓN(corre siempre, incluso cargando desde JSON)
+        for (GameObject go : this.gameObjects) {
+            Tilemap tm = go.getComponent(Tilemap.class);
+            if (tm != null) {
+                // Marcamos el piso común (tile 0) como transitable y el 1 como sólido
+                tm.settileSolid(1, true);
+
+                // Plantamos 4 baldosas de pared justo a la derecha de RavenTom
+                tm.setTile(12, 2, 1);
+                tm.setTile(12, 3, 1);
+                tm.setTile(12, 4, 1);
+                break;
+            }
         }
     }
 
