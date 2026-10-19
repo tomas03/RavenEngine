@@ -1,7 +1,7 @@
 package org.ravenEngine.util;
 
 import com.google.gson.*;
-import org.ravenEngine.scene.Component;
+import org.ravenEngine.components.Component;
 
 import java.lang.reflect.Type;
 

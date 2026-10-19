@@ -3,7 +3,6 @@ package org.ravenEngine.components;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.ravenEngine.renderer.DebugDraw;
-import org.ravenEngine.scene.Component;
 
 public class BoxCollider2D extends Component {
     private Vector2f size = new Vector2f(32.0f, 16.0f);

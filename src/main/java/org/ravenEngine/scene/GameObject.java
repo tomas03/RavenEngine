@@ -1,12 +1,13 @@
 package org.ravenEngine.scene;
 
+import org.ravenEngine.components.Component;
 import org.ravenEngine.components.Transform;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class GameObject {
-    private final String name;
+    private String name;
     private final List<Component> components;
     public Transform transform;
     private int zIndex = 0;
@@ -20,6 +21,10 @@ public class GameObject {
     public GameObject(String name, Transform transform, int zIndex) {
         this(name, transform); // Llama al constructor de arriba que ya hace todo
         this.zIndex = zIndex;
+    }
+
+    public GameObject(String name) {
+        this(name, new Transform(new org.joml.Vector2f(0.0f, 0.0f)));
     }
 
     public<T extends Component>T getComponent(Class<T> componentClass){
@@ -54,6 +59,8 @@ public class GameObject {
     }
 
     public String getName(){return name;}
+
+    public void setName(String name) {this.name = name;}
 
     public List<Component> getComponents() {
         return this.components;

@@ -1,4 +1,6 @@
-package org.ravenEngine.scene;
+package org.ravenEngine.components;
+
+import org.ravenEngine.scene.GameObject;
 
 public class Component {
     public transient GameObject gameObject = null;

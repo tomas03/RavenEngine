@@ -4,52 +4,120 @@ import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 
+import java.util.Random;
+
 public class Camera {
-    private final Matrix4f projectionMatrix;
-    private final Matrix4f viewMatrix;
-    public Vector2f position;
 
-    // Control de zoom y resolución virtual
+    public Vector2f position = new Vector2f();
+    private final Vector2f renderPosition = new Vector2f();
+    private final Matrix4f projectionMatrix = new Matrix4f();
+    private final Matrix4f viewMatrix = new Matrix4f();
+
     private float zoom = 1.0f;
-    private final float BASE_PROJECTION_WIDTH = 640.0f;
-    private final float BASE_PROJECTION_HEIGHT = 360.0f;
-    private final Vector2f projectionSize = new Vector2f(BASE_PROJECTION_WIDTH, BASE_PROJECTION_HEIGHT);
+    private final float projectionWidth = 640.0f;
+    private final float projectionHeight = 360.0f;
 
-    public Camera(Vector2f position) {
-        this.position = position;
-        this.viewMatrix = new Matrix4f();
-        this.projectionMatrix = new Matrix4f();
+    // --- SISTEMA DE CAMERA SHAKE (TRAUMA-BASED) ---
+    private float trauma = 0.0f;
+    private final float traumaDecayRate = 1.4f; // Velocidad con la que se apaga el temblor
+    private final float maxShakeOffset = 18.0f;  // Píxeles máximos de desplazamiento
+    private final float maxShakeAngle = 0.04f;   // Rotación máxima en radianes (~2.3 grados)
+    private float shakeAngle = 0.0f;
+    private final Random random = new Random();
+
+    // --- SEGUIMIENTO SUAVE (SMOOTH FOLLOW) ---
+    private Vector2f targetToFollow = null;
+    private float smoothSpeed = 5.0f; // Multiplicador de interpolación
+
+    public Camera() {
         adjustProjection();
     }
 
-    public Matrix4f getViewMatrix() {
-        Vector3f cameraFront = new Vector3f(0.0f, 0.0f, -1.0f);
-        Vector3f cameraUp = new Vector3f(0.0f, 1.0f, 0.0f);
-        this.viewMatrix.identity();
-        this.viewMatrix.lookAt(
-                new Vector3f(position.x, position.y, 20.0f),
-                cameraFront.add(position.x, position.y, 0.0f),
-                cameraUp
+    public Camera(Vector2f position) {
+        this.position = position;
+        adjustProjection();
+    }
+
+    public void adjustProjection() {
+        projectionMatrix.identity();
+        projectionMatrix.ortho(
+                0.0f, projectionWidth * zoom,
+                0.0f, projectionHeight * zoom,
+                0.0f, 100.0f
         );
-        return this.viewMatrix;
     }
 
-    public Vector2f screenToWorld(float screenX, float screenY, float viewportWidth, float viewportHeight) {
-        // 1. Normalizar las coordenadas a rango [0, 1] respecto al Viewport
-        float normalizedX = screenX / viewportWidth;
-        float normalizedY = (viewportHeight - screenY) / viewportHeight;
+    public void update(float dt) {
+        // 1. Seguimiento suave al objetivo (Lerp)
+        if (targetToFollow != null) {
+            float targetX = targetToFollow.x - (projectionWidth * zoom) / 2.0f;
+            float targetY = targetToFollow.y - (projectionHeight * zoom) / 2.0f;
 
-        // 2. Mapear usando el projectionSize actual (afectado por el zoom)
-        float worldX = this.position.x + (normalizedX * this.projectionSize.x);
-        float worldY = this.position.y + (normalizedY * this.projectionSize.y);
+            this.position.x += (targetX - this.position.x) * smoothSpeed * dt;
+            this.position.y += (targetY - this.position.y) * smoothSpeed * dt;
+        }
 
-        return new Vector2f(worldX, worldY);
+        // 2. Procesamiento de Camera Shake
+        float shakeOffsetX = 0.0f;
+        float shakeOffsetY = 0.0f;
+        shakeAngle = 0.0f;
+
+        if (trauma > 0.0f) {
+            // El temblor no lineal (trauma al cuadrado) da una sensación más física
+            float shakeIntensity = trauma * trauma;
+
+            shakeOffsetX = maxShakeOffset * shakeIntensity * ((random.nextFloat() * 2.0f) - 1.0f);
+            shakeOffsetY = maxShakeOffset * shakeIntensity * ((random.nextFloat() * 2.0f) - 1.0f);
+            shakeAngle   = maxShakeAngle  * shakeIntensity * ((random.nextFloat() * 2.0f) - 1.0f);
+
+            // Reducción del trauma con el paso del tiempo
+            trauma = Math.max(trauma - (traumaDecayRate * dt), 0.0f);
+        }
+
+        // Posición final combinada enviada a la GPU
+        renderPosition.set(this.position.x + shakeOffsetX, this.position.y + shakeOffsetY);
     }
 
-    public void addZoom(float delta) {
-        // delta > 0 acerca, delta < 0 aleja
-        this.zoom -= delta * 0.1f;
-        this.zoom = Math.max(0.25f, Math.min(this.zoom, 3.0f));
+    public Matrix4f getViewMatrix() {
+        viewMatrix.identity();
+
+        // Aplicamos traslación de cámara invertida
+        viewMatrix.translate(-renderPosition.x, -renderPosition.y, 0.0f);
+
+        // Si hay rotación por shake, rotamos alrededor del centro de la pantalla
+        if (shakeAngle != 0.0f) {
+            float centerX = (projectionWidth * zoom) / 2.0f;
+            float centerY = (projectionHeight * zoom) / 2.0f;
+
+            viewMatrix.translate(centerX, centerY, 0.0f);
+            viewMatrix.rotateZ(shakeAngle);
+            viewMatrix.translate(-centerX, -centerY, 0.0f);
+        }
+
+        return viewMatrix;
+    }
+
+    public Matrix4f getProjectionMatrix() {
+        return projectionMatrix;
+    }
+
+    /**
+     * Agrega trauma entre 0.0 y 1.0 (se acumula hasta 1.0)
+     */
+    public void addTrauma(float amount) {
+        this.trauma = Math.min(this.trauma + amount, 1.0f);
+    }
+
+    public void setTarget(Vector2f target) {
+        this.targetToFollow = target;
+    }
+
+    public void setSmoothSpeed(float speed) {
+        this.smoothSpeed = speed;
+    }
+
+    public void addZoom(float value) {
+        this.zoom = Math.max(0.2f, Math.min(this.zoom - (value * 0.1f), 4.0f));
         adjustProjection();
     }
 
@@ -58,26 +126,27 @@ public class Camera {
         adjustProjection();
     }
 
-    public void adjustProjection() {
-        this.projectionSize.set(BASE_PROJECTION_WIDTH * zoom, BASE_PROJECTION_HEIGHT * zoom);
+    public Vector2f screenToWorld(float screenX, float screenY, float viewportWidth, float viewportHeight) {
+        float normalizedX = screenX / viewportWidth;
+        float normalizedY = 1.0f - (screenY / viewportHeight); // Inversión eje Y
 
-        this.projectionMatrix.identity();
-        this.projectionMatrix.ortho(
-                0.0f, this.projectionSize.x,
-                0.0f, this.projectionSize.y,
-                0.0f, 100.0f
-        );
+        float worldX = renderPosition.x + (normalizedX * projectionWidth * zoom);
+        float worldY = renderPosition.y + (normalizedY * projectionHeight * zoom);
+
+        return new Vector2f(worldX, worldY);
+    }
+    public float getProjectionWidth() {
+        return this.projectionWidth;
     }
 
-    public Matrix4f getProjectionMatrix() {
-        return projectionMatrix;
-    }
-
-    public Vector2f getProjectionSize() {
-        return projectionSize;
+    public float getProjectionHeight() {
+        return this.projectionHeight;
     }
 
     public float getZoom() {
-        return zoom;
+        return this.zoom;
+    }
+    public Vector2f getProjectionSize() {
+        return new Vector2f(this.projectionWidth * this.zoom, this.projectionHeight * this.zoom);
     }
 }

@@ -6,7 +6,6 @@ import java.util.Map;
 import org.ravenEngine.renderer.Sprite;
 import org.ravenEngine.renderer.SpriteRenderer;
 import org.ravenEngine.renderer.animation.Animation;
-import org.ravenEngine.scene.Component;
 
 public class SpriteAnimator extends Component{
 

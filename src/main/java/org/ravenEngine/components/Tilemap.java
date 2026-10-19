@@ -4,7 +4,6 @@ import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
 import org.ravenEngine.renderer.*;
-import org.ravenEngine.scene.Component;
 import org.ravenEngine.util.AssetPool;
 
 import java.nio.FloatBuffer;

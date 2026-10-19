@@ -126,6 +126,10 @@ public class Window {
             errorCb.free();
         }
     }
+    public void updateRuntime(float deltaTime) {
+        glfwSwapBuffers(this.windowHandle);
+        glfwPollEvents();
+    }
 
     // Getters útiles para el resto del motor
     public Long getWindowHandle() {
@@ -143,4 +147,6 @@ public class Window {
     public int getHeight() {
         return height;
     }
+
+
 }

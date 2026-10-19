@@ -1,7 +1,6 @@
 package org.ravenEngine.components;
 
 import org.joml.Vector2f;
-import org.ravenEngine.scene.Component;
 import org.ravenEngine.scene.GameObject;
 
 public abstract class Interactable extends Component {

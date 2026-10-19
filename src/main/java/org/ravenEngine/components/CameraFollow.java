@@ -3,7 +3,6 @@ package org.ravenEngine.components;
 import org.joml.Vector2f;
 import org.ravenEngine.core.Engine;
 import org.ravenEngine.renderer.Camera;
-import org.ravenEngine.scene.Component;
 import org.ravenEngine.util.MathUtils;
 
 public class CameraFollow extends Component {
@@ -63,6 +62,7 @@ public class CameraFollow extends Component {
     public void setCamera(Camera camera) {
         this.camera = camera;
     }
+
 
     public Vector2f getViewportSize() {
         return viewportSize;

@@ -2,7 +2,7 @@ package org.ravenEngine.renderer;
 
 import org.joml.Vector2f;
 import org.joml.Vector4f;
-import org.ravenEngine.scene.Component;
+import org.ravenEngine.components.Component;
 import org.ravenEngine.util.AssetPool;
 
 public class SpriteRenderer extends Component {
@@ -74,7 +74,7 @@ public class SpriteRenderer extends Component {
     public boolean isDirty() {
         return this.isDirty;
     }
-
+    public void setDirty() {this.isDirty = true;}
     public void setClean() {
         this.isDirty = false;
     }

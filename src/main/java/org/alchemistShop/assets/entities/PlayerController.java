@@ -2,10 +2,11 @@ package org.alchemistShop.assets.entities;
 
 import org.joml.Vector2f;
 import org.ravenEngine.components.Interactable;
+import org.ravenEngine.components.RigidBody2D;
 import org.ravenEngine.components.SpriteAnimator;
 import org.ravenEngine.core.Engine;
 import org.ravenEngine.io.KeyListener;
-import org.ravenEngine.scene.Component;
+import org.ravenEngine.components.Component;
 import org.ravenEngine.scene.GameObject;
 
 import static org.lwjgl.glfw.GLFW.*;
@@ -30,7 +31,7 @@ public class PlayerController extends Component {
         float dx = 0.0f;
         float dy = 0.0f;
 
-        // EJE Y
+        // 1. CAPTURA DE ENTRADAS (EJE Y)
         if (KeyListener.isKeyPressed(GLFW_KEY_W) || KeyListener.isKeyPressed(GLFW_KEY_UP)) {
             dy += 1.0f;
         }
@@ -38,7 +39,7 @@ public class PlayerController extends Component {
             dy -= 1.0f;
         }
 
-        // EJE X
+        // 2. CAPTURA DE ENTRADAS (EJE X)
         if (KeyListener.isKeyPressed(GLFW_KEY_D) || KeyListener.isKeyPressed(GLFW_KEY_RIGHT)) {
             dx += 1.0f;
         }
@@ -46,18 +47,39 @@ public class PlayerController extends Component {
             dx -= 1.0f;
         }
 
+        // 3. INTERACCIÓN (E)
         if (KeyListener.isKeyPressed(GLFW_KEY_E)) {
             interactWithNearest();
         }
 
         boolean moving = (dx != 0.0f || dy != 0.0f);
 
+        // 4. NORMALIZACIÓN VECTORIAL (Evita velocidad extra en diagonales)
         if (moving) {
-            // Aplicamos movimiento (Scene se encarga de frenarlo si choca contra un objeto sólido)
-            gameObject.transform.pos.x += dx * speed * dt;
-            gameObject.transform.pos.y += dy * speed * dt;
+            float length = (float) Math.sqrt(dx * dx + dy * dy);
+            dx /= length;
+            dy /= length;
+        }
 
-            // Selección de animación según dirección
+        // 5. APLICACIÓN DE FÍSICAS (VÍA RIGIDBODY2D)
+        RigidBody2D rb = gameObject.getComponent(RigidBody2D.class);
+        if (rb != null) {
+            if (moving) {
+                rb.setVelocity(dx * speed, dy * speed);
+            } else {
+                // Al soltar las teclas se frena en seco para mantener control preciso top-down
+                rb.setVelocity(0.0f, 0.0f);
+            }
+        } else {
+            // Fallback por si la entidad no tiene Rigidbody2D
+            if (moving) {
+                gameObject.transform.pos.x += dx * speed * dt;
+                gameObject.transform.pos.y += dy * speed * dt;
+            }
+        }
+
+        // 6. CONTROL DE ANIMACIONES
+        if (moving) {
             if (animator != null) {
                 if (dy > 0) {
                     animator.play("walk_up");
@@ -74,7 +96,7 @@ public class PlayerController extends Component {
                 }
             }
         } else {
-            // Reposo mirando en la última dirección que caminó
+            // Reposo mirando en la última dirección registrada
             if (animator != null) {
                 animator.play("idle_" + lastDirection);
             }
@@ -113,12 +135,10 @@ public class PlayerController extends Component {
     }
 
     @Override
-    public void onCollisionEnter(GameObject other) {
-        System.out.println("¡CRASH! El mago chocó contra: " + other.getName());
-    }
+    public void onCollisionEnter(GameObject other) {return;}
 
     @Override
     public void onCollisionExit(GameObject other) {
-        System.out.println("El mago dejó de tocar: " + other.getName());
+        return;
     }
 }
