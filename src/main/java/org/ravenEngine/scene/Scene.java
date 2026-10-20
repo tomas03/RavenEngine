@@ -270,14 +270,29 @@ public abstract class Scene {
             }
         }
 
-        // 2. Y-Sorting
+        // 2. Y-Sorting robusto (Capas + Pies + Null-safe)
         this.gameObjects.sort((a, b) -> {
-            if (a.getComponent(Tilemap.class) != null) return -1;
-            if (b.getComponent(Tilemap.class) != null) return 1;
+            boolean aIsTilemap = a.getComponent(Tilemap.class) != null;
+            boolean bIsTilemap = b.getComponent(Tilemap.class) != null;
 
-            float yA = a.transform.pos.y;
-            float yB = b.transform.pos.y;
-            return Float.compare(yB, yA);
+            // Si ambos son Tilemaps o ninguno lo es, se resuelve con la lógica de abajo
+            if (aIsTilemap && bIsTilemap) return 0;
+            if (aIsTilemap) return -1;
+            if (bIsTilemap) return 1;
+
+            if (a.transform == null && b.transform == null) return 0;
+            if (a.transform == null) return -1;
+            if (b.transform == null) return 1;
+
+            SpriteRenderer sprA = a.getComponent(SpriteRenderer.class);
+            SpriteRenderer sprB = b.getComponent(SpriteRenderer.class);
+
+            // Calcular profundidad (Mayor Y = más al fondo = se dibuja primero)
+            float depthA = (sprA != null) ? sprA.getDepthValue() : a.transform.pos.y;
+            float depthB = (sprB != null) ? sprB.getDepthValue() : b.transform.pos.y;
+
+            // Orden descendente: los valores con mayor Y van primero
+            return Float.compare(depthB, depthA);
         });
 
         // 3. Entidades ordenadas
@@ -291,10 +306,10 @@ public abstract class Scene {
             }
         }
 
-        //4.2 RENDERIZADO DE TEXTO EN EL MUNDO
-        for (GameObject go : this.gameObjects){
+        // 4.2 RENDERIZADO DE TEXTO EN EL MUNDO
+        for (GameObject go : this.gameObjects) {
             TextRenderer tr = go.getComponent(TextRenderer.class);
-            if (tr != null){
+            if (tr != null) {
                 tr.render(this.camera);
             }
         }
@@ -316,6 +331,7 @@ public abstract class Scene {
 
             DebugDraw.draw(this.camera);
         }
+
         if (this.screenFade != null) {
             this.screenFade.render();
         }

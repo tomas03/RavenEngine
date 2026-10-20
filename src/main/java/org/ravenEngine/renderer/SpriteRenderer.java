@@ -10,6 +10,15 @@ public class SpriteRenderer extends Component {
     private Sprite sprite = new Sprite(null);
     private transient boolean isDirty = true; // transient para que no dependa del JSON
 
+    // Capa base: 0 = Suelo, 1 = Entidades/Muebles dinámicos, 2 = Techos/UI flotante
+    private int zIndex = 1;
+
+    // Si es true, el orden dentro de su capa se recalcula según la posición Y
+    private boolean dynamicYSort = true;
+
+    // Desplazamiento desde la base del sprite para calcular el punto de apoyo en el suelo
+    private float ySortOffset = 0.0f;
+
     // 1. Constructor vacío OBLIGATORIO para Gson
     public SpriteRenderer() {
     }
@@ -46,6 +55,28 @@ public class SpriteRenderer extends Component {
         }
         this.isDirty = true;
     }
+
+    /**
+     * Devuelve el valor de profundidad. A menor Y (más abajo en pantalla), mayor prioridad de dibujo.
+     */
+    public float getDepthValue() {
+        if (!dynamicYSort || gameObject == null || gameObject.transform == null) {
+            return (float) zIndex * 100000.0f;
+        }
+
+        // Base del objeto en el mundo + offset personalizado de pies
+        float feetY = gameObject.transform.pos.y + ySortOffset;
+
+        // Se invierte Y para que los pies que estén más abajo se dibujen al final (encima de todo)
+        return ((float) zIndex * 100000.0f) - feetY;
+    }
+
+    public int getZIndex() { return zIndex; }
+    public void setZIndex(int zIndex) { this.zIndex = zIndex; }
+    public boolean isDynamicYSort() { return dynamicYSort; }
+    public void setDynamicYSort(boolean dynamicYSort) { this.dynamicYSort = dynamicYSort; }
+    public float getYSortOffset() { return ySortOffset; }
+    public void setYSortOffset(float ySortOffset) { this.ySortOffset = ySortOffset; }
 
     public Vector4f getColor() {
         return color;

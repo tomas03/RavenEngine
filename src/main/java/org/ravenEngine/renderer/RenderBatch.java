@@ -3,6 +3,7 @@ package org.ravenEngine.renderer;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
+import org.ravenEngine.renderer.SpriteRenderer;
 import org.ravenEngine.scene.GameObject;
 import org.ravenEngine.util.AssetPool;
 
@@ -30,21 +31,22 @@ public class RenderBatch {
     private int numSprites;
     private boolean hasRoom;
     private final float[] vertices;
-    private final List< Texture > textures;
+    private final FloatBuffer vertexBuffer; // Buffer reutilizable para 0 asignaciones por frame
+    private final List<Texture> textures;
     private int vaoID, vboID;
     private final int maxBatchSize;
     private final Shader shader;
 
     public RenderBatch(int maxBatchSize, Shader shader) {
-        // Pedimos la instancia cacheada al AssetPool
         this.shader = AssetPool.getShader("/Shaders/default.vert", "/Shaders/default.frag");
         this.sprites = new SpriteRenderer[maxBatchSize];
         this.maxBatchSize = maxBatchSize;
 
         this.vertices = new float[maxBatchSize * 4 * VERTEX_SIZE];
+        this.vertexBuffer = BufferUtils.createFloatBuffer(this.vertices.length);
         this.numSprites = 0;
         this.hasRoom = true;
-        this.textures = new ArrayList< >();
+        this.textures = new ArrayList<>();
     }
 
     public void start() {
@@ -99,9 +101,7 @@ public class RenderBatch {
         SpriteRenderer spr = go.getComponent(SpriteRenderer.class);
         if (spr != null) {
             for (int i = 0; i < numSprites; i++) {
-                // Comparamos por componente o directamente por su GameObject
                 if (sprites[i] == spr || (sprites[i] != null && sprites[i].gameObject == go)) {
-                    // Corremos los elementos posteriores hacia la izquierda para cerrar el hueco
                     for (int j = i; j < numSprites - 1; j++) {
                         sprites[j] = sprites[j + 1];
                     }
@@ -116,17 +116,20 @@ public class RenderBatch {
     }
 
     public void render(Camera camera) {
-        // 1. Y-Sorting: Ordenamos los sprites activos por zIndex y luego por posición Y
+        if (numSprites == 0) return;
+
+        // 1. Y-Sorting: Insertion Sort optimizado por zIndex y base de los pies
         sortSprites();
 
-        // 2. Regenerar los vértices con el orden correcto
+        // 2. Regenerar los vértices con el orden correcto en el array
         for (int i = 0; i < numSprites; i++) {
             loadVertexProperties(i);
         }
 
+        // 3. Subir al VBO usando el buffer precargado (Cero asignaciones en memoria)
         glBindBuffer(GL_ARRAY_BUFFER, vboID);
-        FloatBuffer vertexBuffer = BufferUtils.createFloatBuffer(vertices.length);
-        vertexBuffer.put(vertices).flip();
+        vertexBuffer.clear();
+        vertexBuffer.put(vertices, 0, numSprites * 4 * VERTEX_SIZE).flip();
         glBufferSubData(GL_ARRAY_BUFFER, 0, vertexBuffer);
 
         shader.use();
@@ -153,12 +156,13 @@ public class RenderBatch {
 
     private void loadVertexProperties(int index) {
         SpriteRenderer sprite = this.sprites[index];
+        if (sprite == null || sprite.gameObject == null || sprite.gameObject.transform == null) return;
+
         int offset = index * 4 * VERTEX_SIZE;
 
         Vector4f color = sprite.getColor();
         Vector2f[] texCoords = sprite.getTexCoords();
 
-        // Buscamos cuál es el slot de esta textura (+1 porque 0 es color plano)
         int texId = 0;
         if (sprite.getTexture() != null) {
             for (int i = 0; i < textures.size(); i++) {
@@ -168,12 +172,10 @@ public class RenderBatch {
                 }
             }
 
-            // Si la textura es nueva (ej: vino de una animación en tiempo de ejecución),
-            // la registramos en el batch para que el shader la active
             if (texId == 0) {
                 if (textures.size() < 8) {
                     textures.add(sprite.getTexture());
-                    texId = textures.size(); // Corresponde al nuevo índice (size - 1) + 1
+                    texId = textures.size();
                 } else {
                     System.err.println("[RenderBatch] Límite de 8 texturas alcanzado en el batch.");
                 }
@@ -219,9 +221,8 @@ public class RenderBatch {
         }
         return elements;
     }
+
     private void sortSprites() {
-        // Ordenamiento burbuja o inserción simple para el array de sprites activos
-        // (Insertion Sort es óptimo acá porque de frame a frame la lista ya está casi ordenada)
         for (int i = 1; i < numSprites; i++) {
             SpriteRenderer key = sprites[i];
             int j = i - 1;
@@ -235,6 +236,10 @@ public class RenderBatch {
     }
 
     private int compareSprites(SpriteRenderer a, SpriteRenderer b) {
+        if (a == null || a.gameObject == null || a.gameObject.transform == null) return -1;
+        if (b == null || b.gameObject == null || b.gameObject.transform == null) return 1;
+
+        // 1. Capa fija (zIndex de Transform o SpriteRenderer)
         int zA = a.gameObject.transform.zIndex;
         int zB = b.gameObject.transform.zIndex;
 
@@ -242,24 +247,17 @@ public class RenderBatch {
             return Integer.compare(zA, zB);
         }
 
-        // Si están en la misma capa zIndex, aplicamos Y-Sorting:
-        // El que tenga MAYOR Y está más arriba/lejos, por ende va primero (menor índice de dibujo)
-        // El que tenga MENOR Y está más abajo/cerca, por ende va después (tapa al de arriba)
-        float yA = a.gameObject.transform.pos.y;
-        float yB = b.gameObject.transform.pos.y;
+        // 2. Y-Sorting: Base de los pies (posición Y + offset si está activo)
+        float feetA = a.gameObject.transform.pos.y + a.getYSortOffset();
+        float feetB = b.gameObject.transform.pos.y + b.getYSortOffset();
 
-        return Float.compare(yB, yA);
+        // En coordenadas donde +Y es hacia arriba:
+        // Mayor Y = más al fondo = menor índice en el batch (se dibuja primero)
+        // Menor Y = más adelante/abajo = mayor índice en el batch (se dibuja encima)
+        return Float.compare(feetB, feetA);
     }
 
-    public boolean hasRoom() {
-        return this.hasRoom;
-    }
-
-    public boolean hasTextureRoom() {
-        return this.textures.size() < 8;
-    }
-
-    public boolean hasTexture(Texture tex) {
-        return this.textures.contains(tex);
-    }
+    public boolean hasRoom() { return this.hasRoom; }
+    public boolean hasTextureRoom() { return this.textures.size() < 8; }
+    public boolean hasTexture(Texture tex) { return this.textures.contains(tex); }
 }
