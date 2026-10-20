@@ -110,15 +110,31 @@ public class DebugDraw {
 
     // Dibuja una caja rectangular pasándole coordenadas mínimas y máximas
     public static void addBox2D(Vector2f min, Vector2f max, Vector3f color) {
-        Vector2f topLeft = new Vector2f(min.x, max.y);
-        Vector2f topRight = new Vector2f(max.x, max.y);
-        Vector2f bottomLeft = new Vector2f(min.x, min.y);
-        Vector2f bottomRight = new Vector2f(max.x, min.y);
+        Vector2f p1 = new Vector2f(min.x, min.y);
+        Vector2f p2 = new Vector2f(max.x, min.y);
+        Vector2f p3 = new Vector2f(max.x, max.y);
+        Vector2f p4 = new Vector2f(min.x, max.y);
 
-        addLine2D(bottomLeft, bottomRight, color);
-        addLine2D(bottomRight, topRight, color);
-        addLine2D(topRight, topLeft, color);
-        addLine2D(topLeft, bottomLeft, color);
+        addLine2D(p1, p2, color);
+        addLine2D(p2, p3, color);
+        addLine2D(p3, p4, color);
+        addLine2D(p4, p1, color);
+    }
+    // DIBUJA UNA FLECHA CON PUNTA TRIANGULAR PARA REPRESENTAR UN EJE
+    public static void addArrow2D(Vector2f from, Vector2f to, Vector3f color, float arrowHeadSize) {
+        // Línea principal
+        addLine2D(from, to, color);
+
+        // Vector director
+        Vector2f dir = new Vector2f(to).sub(from).normalize();
+        Vector2f perp = new Vector2f(-dir.y, dir.x);
+
+        // Puntas de la flecha
+        Vector2f arrowP1 = new Vector2f(to).sub(new Vector2f(dir).mul(arrowHeadSize)).add(new Vector2f(perp).mul(arrowHeadSize * 0.5f));
+        Vector2f arrowP2 = new Vector2f(to).sub(new Vector2f(dir).mul(arrowHeadSize)).sub(new Vector2f(perp).mul(arrowHeadSize * 0.5f));
+
+        addLine2D(to, arrowP1, color);
+        addLine2D(to, arrowP2, color);
     }
 
 }

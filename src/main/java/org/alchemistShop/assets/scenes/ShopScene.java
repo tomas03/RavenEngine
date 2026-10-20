@@ -7,6 +7,7 @@ import org.joml.Vector2f;
 import org.joml.Vector4f;
 import org.ravenEngine.components.*;
 import org.ravenEngine.io.KeyListener;
+import org.ravenEngine.renderer.Sprite;
 import org.ravenEngine.renderer.SpriteRenderer;
 import org.ravenEngine.renderer.Spritesheet;
 import org.ravenEngine.renderer.Texture;
@@ -50,7 +51,7 @@ public class ShopScene extends Scene {
     @Override
     public void update(float dt) {
         super.update(dt);
-        
+
     }
 
 
@@ -72,6 +73,7 @@ public class ShopScene extends Scene {
         createProps(propsSprites);
         createPlayer(playerSprites);
         createPushableTestBox(); // <-- Objeto de prueba para físicas dinámicas
+        createNPC();
     }
 
     // ==========================================
@@ -215,6 +217,40 @@ public class ShopScene extends Scene {
         jugador.addComponent(playerRb);
 
         this.addGameObjectToScene(jugador);
+    }
+    private void createNPC(){
+        // ==========================================
+        // NPC DE PRUEBA: ALQUIMISTA ANCIANO
+        // ==========================================
+        GameObject npc = new GameObject("Viejo Alquimista");
+
+        // 1. Ubicación cerca del spawn de RavenTom (ajustá X e Y según tu mapa)
+        npc.transform.pos.set(200.0f, 150.0f);
+        npc.transform.scale.set(32.0f, 32.0f);
+
+        // 2. Le asignamos una textura (podés usar el Frasco.png o cualquier sprite que tengas)
+        Texture npcTex = AssetPool.getTexture("textures/Frasco.png");
+        if (npcTex != null) {
+            Sprite sprite = new Sprite(npcTex);
+            npc.addComponent(new SpriteRenderer(sprite));
+        }
+
+        // 3. Le clavamos el componente de diálogo interactivo
+        DialogueInteractable dialogue = new DialogueInteractable(
+                "Viejo Alquimista",
+                "¡Epa, RavenTom! Menos mal que llegaste.",
+                "El caldero del fondo empezó a largar humo violeta...",
+                "Fijate en tu bolsa si tenés alguna poción para neutralizarlo."
+        );
+
+        // Ajustamos el radio de interacción (en píxeles)
+        dialogue.interactionRadius = 45.0f;
+
+        npc.addComponent(dialogue);
+
+        // 4. Lo sumamos a la escena
+        this.addGameObjectToScene(npc);
+
     }
 
     private void createPushableTestBox() {

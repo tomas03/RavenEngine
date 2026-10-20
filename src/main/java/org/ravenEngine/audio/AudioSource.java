@@ -19,6 +19,13 @@ public class AudioSource extends Component {
         this.volume = volume;
     }
 
+    public AudioSource() {
+        this.filepath = "";
+        this.loop = false;
+        this.playOnStart = false;
+        this.volume = 1.0f;
+    }
+
     @Override
     public void start() {
         this.sound = AssetPool.addSound(filepath, loop);

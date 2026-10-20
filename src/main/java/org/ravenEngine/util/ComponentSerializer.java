@@ -15,4 +15,18 @@ public class ComponentSerializer implements JsonSerializer<Component> {
         result.add("properties",context.serialize(src,src.getClass()));
         return result;
     }
+
+    //Getters y Setters
+    private static Gson gsonInstance;
+
+    public static Gson getGson() {
+        if (gsonInstance == null) {
+            gsonInstance = new GsonBuilder()
+                    .registerTypeAdapter(Component.class, new ComponentDeserializer())
+                    .registerTypeAdapter(Component.class, new ComponentSerializer())
+                    .setPrettyPrinting()
+                    .create();
+        }
+        return gsonInstance;
+    }
 }

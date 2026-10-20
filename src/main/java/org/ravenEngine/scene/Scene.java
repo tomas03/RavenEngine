@@ -5,6 +5,9 @@ import com.google.gson.GsonBuilder;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.ravenEngine.components.*;
+import org.ravenEngine.core.Engine;
+import org.ravenEngine.core.Window;
+import org.ravenEngine.editor.GizmoRenderer;
 import org.ravenEngine.io.KeyListener;
 import org.ravenEngine.physics.Physics2D;
 import org.ravenEngine.renderer.*;
@@ -56,22 +59,15 @@ public abstract class Scene {
             System.out.println("[Scene] Debug Mode cambiado a: " + debugMode);
         }
 
-        // 1. Limpieza de objetos destruidos al final del frame
+        // 1. Limpieza limpia de objetos destruidos al final/inicio del frame
         if (!this.pendingToDestroy.isEmpty()) {
             for (GameObject go : this.pendingToDestroy) {
                 this.gameObjects.remove(go);
                 this.physics2D.remove(go);
-            }
 
-            // 2. Reconstruir el renderer con las entidades vivas marcadas como sucias
-            if (this.renderer != null) {
-                this.renderer.clear();
-                for (GameObject go : this.gameObjects) {
-                    SpriteRenderer spr = go.getComponent(SpriteRenderer.class);
-                    if (spr != null) {
-                        spr.setDirty();
-                    }
-                    this.renderer.add(go);
+                // Sacamos únicamente el sprite del objeto destruido sin tocar los demás
+                if (this.renderer != null) {
+                    this.renderer.destroyGameObject(go);
                 }
             }
 
@@ -248,11 +244,6 @@ public abstract class Scene {
         }
     }
 
-    public void destroyGameObject(GameObject go) {
-        if (go != null && !this.pendingToDestroy.contains(go)) {
-            this.pendingToDestroy.add(go);
-        }
-    }
 
     public void spawnGameObject(GameObject go) {
         if (go == null) return;
@@ -290,9 +281,6 @@ public abstract class Scene {
         });
 
         // 3. Entidades ordenadas
-        this.renderer.render(this.camera);
-
-        // 4. Batches de Sprites
         this.renderer.render(this.camera);
 
         // 4.1 SISTEMA DE PARTÍCULAS
@@ -333,6 +321,33 @@ public abstract class Scene {
         }
 
         DebugDraw.beginFrame();
+    }
+
+    // ==========================================
+    // GESTIÓN DE ENTIDADES Y DESTRUCCIÓN
+    // ==========================================
+
+    public void destroyGameObjectImmediate(GameObject go) {
+        if (go == null) return;
+
+        this.gameObjects.remove(go);
+        this.pendingToDestroy.remove(go);
+        this.physics2D.remove(go);
+
+        if (this.renderer != null) {
+            this.renderer.destroyGameObject(go);
+        }
+    }
+
+    public void destroyGameObject(GameObject go) {
+        if (go == null) return;
+
+        // Si estamos en el editor (simulación apagada), borra al instante de la GPU
+        if (!org.ravenEngine.core.Engine.IsPlaying()) {
+            destroyGameObjectImmediate(go);
+        } else if (!this.pendingToDestroy.contains(go)) {
+            this.pendingToDestroy.add(go);
+        }
     }
 
     // ==========================================

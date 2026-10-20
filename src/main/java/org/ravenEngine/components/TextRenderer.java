@@ -20,7 +20,7 @@ import static org.lwjgl.opengl.GL30.*;
 
 public class TextRenderer extends Component {
 
-    // Variables que SÍ se serializan en el JSON
+    // Variables serializables
     private String text = "";
     private String fontPath = "/usr/share/fonts/noto/NotoSans-Regular.ttf";
     private float fontSize = 20.0f;
@@ -29,7 +29,7 @@ public class TextRenderer extends Component {
     private float scale = 1.0f;
     private boolean isVisible = true;
 
-    // Recursos nativos excluidos de la serialización
+    // Recursos nativos excluidos de serialización
     private transient Font font;
     private static transient int vao = 0;
     private static transient int vbo = 0;
@@ -66,25 +66,29 @@ public class TextRenderer extends Component {
     public void update(float dt) {}
 
     private void ensureFontLoaded() {
-        if (this.font == null && this.fontPath != null && !this.fontPath.isEmpty()) {
+        if (this.fontPath == null || this.fontPath.isEmpty()) return;
+
+        // Si la fuente no existe o si cambió el tamaño o la ruta desde el Inspector
+        boolean needsReload = (this.font == null)
+                || (Math.abs(this.font.getFontSize() - this.fontSize) > 0.001f)
+                || (!this.fontPath.equals(this.font.getFontPath()));
+
+        if (needsReload) {
             File f = new File(this.fontPath);
             if (f.exists()) {
+                if (this.font != null) {
+                    this.font.destroy();
+                }
                 this.font = new Font(this.fontPath, this.fontSize);
             }
         }
     }
 
     public void render(Camera camera) {
-        // Auto-reparación: si se perdió la referencia tras el Stop/Reload, la recupera al instante
-        if (font == null) {
-            ensureFontLoaded();
-            if (font == null) return;
-        }
-
-        if (!isVisible || text == null || text.isEmpty()) return;
+        ensureFontLoaded();
+        if (font == null || !isVisible || text == null || text.isEmpty()) return;
         if (gameObject == null || gameObject.transform == null) return;
 
-        // Posición base en el mundo (Transform de la entidad + offset manual)
         float startX = gameObject.transform.pos.x + offset.x;
         float startY = gameObject.transform.pos.y + offset.y;
 
@@ -138,7 +142,6 @@ public class TextRenderer extends Component {
         }
 
         vertexBuffer.flip();
-
         if (vertexCount == 0) return;
 
         glBindBuffer(GL_ARRAY_BUFFER, vbo);
@@ -229,13 +232,21 @@ public class TextRenderer extends Component {
         glBindVertexArray(0);
     }
 
+    // Getters y Setters
     public void setText(String text) { this.text = text; }
     public String getText() { return text; }
+    public void setFontSize(float fontSize) { this.fontSize = fontSize; }
+    public float getFontSize() { return fontSize; }
     public void setFont(Font font) { this.font = font; }
+    public Font getFont() { return font; }
     public void setFontPath(String fontPath) { this.fontPath = fontPath; }
+    public String getFontPath() { return fontPath; }
     public void setColor(Vector4f color) { this.color.set(color); }
+    public Vector4f getColor() { return this.color; }
     public void setOffset(Vector2f offset) { this.offset.set(offset); }
+    public Vector2f getOffset() { return this.offset; }
     public void setScale(float scale) { this.scale = scale; }
+    public float getScale() { return this.scale; }
     public void setVisible(boolean visible) { this.isVisible = visible; }
     public boolean isVisible() { return isVisible; }
 }

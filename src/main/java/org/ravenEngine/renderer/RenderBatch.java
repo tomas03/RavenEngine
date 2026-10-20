@@ -3,6 +3,7 @@ package org.ravenEngine.renderer;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
+import org.ravenEngine.scene.GameObject;
 import org.ravenEngine.util.AssetPool;
 
 import java.nio.FloatBuffer;
@@ -92,6 +93,26 @@ public class RenderBatch {
         if (numSprites >= this.maxBatchSize) {
             this.hasRoom = false;
         }
+    }
+
+    public boolean destroyIfExists(GameObject go) {
+        SpriteRenderer spr = go.getComponent(SpriteRenderer.class);
+        if (spr != null) {
+            for (int i = 0; i < numSprites; i++) {
+                // Comparamos por componente o directamente por su GameObject
+                if (sprites[i] == spr || (sprites[i] != null && sprites[i].gameObject == go)) {
+                    // Corremos los elementos posteriores hacia la izquierda para cerrar el hueco
+                    for (int j = i; j < numSprites - 1; j++) {
+                        sprites[j] = sprites[j + 1];
+                    }
+                    sprites[numSprites - 1] = null;
+                    this.numSprites--;
+                    this.hasRoom = true;
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     public void render(Camera camera) {

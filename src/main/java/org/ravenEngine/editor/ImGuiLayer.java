@@ -7,12 +7,13 @@ import imgui.ImVec2;
 import imgui.flag.*;
 import imgui.gl3.ImGuiImplGl3;
 import imgui.glfw.ImGuiImplGlfw;
-import org.alchemistShop.assets.util.ItemDB;
 import org.joml.Vector2f;
-import org.ravenEngine.audio.AudioSource;
-import org.ravenEngine.components.Inventory;
 import org.ravenEngine.components.Tilemap;
+import org.ravenEngine.core.DialogueManager;
 import org.ravenEngine.core.Engine;
+import org.ravenEngine.editor.history.CommandHistory;
+import org.ravenEngine.editor.history.DeleteGameObjectCommand;
+import org.ravenEngine.editor.history.TransformCommand;
 import org.ravenEngine.renderer.FrameBuffer;
 import org.ravenEngine.renderer.Sprite;
 import org.ravenEngine.renderer.Spritesheet;
@@ -20,66 +21,54 @@ import org.ravenEngine.scene.GameObject;
 import org.ravenEngine.scene.Scene;
 
 import java.util.List;
-import java.util.Map;
 
 public class ImGuiLayer {
 
-    // ==========================================
-    // ATRIBUTOS Y SUBSISTEMAS DEL EDITOR
-    // ==========================================
+    // Sub-sistemas y paneles desacoplados
     private final long glfwWindow;
     private final ImGuiImplGlfw imGuiGlfw = new ImGuiImplGlfw();
     private final ImGuiImplGl3 imGuiGl3 = new ImGuiImplGl3();
+
     private final SceneHierarchy sceneHierarchy = new SceneHierarchy();
-    private final InspectorWindow inspectorWindow;
+    private final InspectorWindow inspectorWindow = new InspectorWindow();
+    private final CodeEditorWindow codeEditorWindow = new CodeEditorWindow();
     private final ContentBrowserPanel contentBrowserPanel;
+    private final ToolsPanel toolsPanel = new ToolsPanel();
+    private final ConsolePanel consolePanel = new ConsolePanel();
+    private final SimulationPanel simulationPanel = new SimulationPanel();
 
-    //Editor de Codigo
-    private CodeEditorWindow codeEditorWindow;
-
-    // Control de scroll de la terminal
-    private boolean autoScroll = true;
-
-    // Control de visibilidad de paneles (Menú Ventana)
+    // Visibilidad de paneles
     private boolean showConsole = true;
     private boolean showContentBrowser = true;
-    private boolean showInventory = true;
     private boolean showInspector = true;
     private boolean showViewport = true;
     private boolean showTools = true;
-    private boolean showCodeEditor = true;
+    private boolean showProjectSettings = false;
 
-    // Variables de manipulación y arrastre en Viewport
+    // Configuración global (ProjectSettings)
+    private final imgui.type.ImString titleBuffer = new imgui.type.ImString(128);
+    private final imgui.type.ImString scenePathBuffer = new imgui.type.ImString(256);
+    private String currentScenePath = "src/main/java/org/alchemistShop/assets/level1.json";
+
+    // Manipulación en Viewport
     private final Vector2f lastMousePos = new Vector2f();
     private boolean isDraggingObject = false;
     private final Vector2f dragOffset = new Vector2f();
-
-    // Snapshot para restaurar la escena al detener la simulación (Play/Stop)
-    private String sceneSnapshot = null;
-
-    // Control del sistema de pincel de tiles
-    private boolean tileEditMode = false;
+    private final Vector2f dragStartMouse = new Vector2f();
+    private final Vector2f initialScale = new Vector2f();
+    private final Vector2f transformStartPos = new Vector2f();
+    private final Vector2f transformStartScale = new Vector2f();
+    private GizmoRenderer.GizmoMode currentGizmoMode = GizmoRenderer.GizmoMode.NONE;
     private int selectedTileIndex = 0;
 
-
-    // ==========================================
-    // CONSTRUCTOR
-    // ==========================================
     public ImGuiLayer(long glfwWindow) {
-        this.inspectorWindow = new InspectorWindow();
-        this.codeEditorWindow = new CodeEditorWindow();
-        this.contentBrowserPanel = new ContentBrowserPanel(this.codeEditorWindow);
         this.glfwWindow = glfwWindow;
+        this.contentBrowserPanel = new ContentBrowserPanel(this.codeEditorWindow, this);
     }
 
-
-    // ==========================================
-    // CICLO DE VIDA (LIFECYCLE)
-    // ==========================================
     public void init() {
         ImGui.createContext();
         ImGuiIO io = ImGui.getIO();
-
         io.addConfigFlags(ImGuiConfigFlags.DockingEnable);
         io.addConfigFlags(ImGuiConfigFlags.NavEnableKeyboard);
 
@@ -92,66 +81,415 @@ public class ImGuiLayer {
         ImGui.newFrame();
         ImGuiIO io = ImGui.getIO();
 
-        // 1. ATAJOS GLOBALES DE TECLADO
-        boolean ctrlPressed = io.getKeyCtrl();
-        boolean sPressed = ImGui.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_S, false);
-        if (ctrlPressed && sPressed) {
-            if (currentScene != null) {
-                currentScene.save("src/main/java/org/alchemistShop/assets/level1.json");
-                System.out.println("[IDE] Escena guardada con Ctrl + S");
-            }
-        }
+        // 1. ATAJOS GLOBALES
+        handleGlobalHotkeys(io, currentScene);
 
-        if (ImGui.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_F1, false)) {
-            if (currentScene != null) {
-                currentScene.toggleDebugMode();
-            }
-        }
-
-        // 2. DOCKSPACE Y BARRA PRINCIPAL
+        // 2. DOCKSPACE Y MENÚ
         setupDockSpace();
         renderMenuBar();
 
-        // 3. PANELES CONDICIONADOS
-        if (showConsole) {
-            renderConsoleWindow();
-        }
-
-        if (showContentBrowser) {
-            contentBrowserPanel.render();
-        }
-
-        if (showInventory) {
-            renderInventoryWindow();
-        }
-
-        if (showInspector) {
-            renderInspector(currentScene);
-        }
+        // 3. PANELES MODULARES
+        if (showConsole) consolePanel.update();
+        if (showContentBrowser) contentBrowserPanel.render();
+        if (showInspector) renderInspector(currentScene);
+        if (showTools) toolsPanel.update(findActiveTilemap(currentScene));
 
         Tilemap activeTilemap = findActiveTilemap(currentScene);
+        if (showViewport) renderViewport(framebuffer, currentScene, activeTilemap);
+        if (toolsPanel.isTileEditMode() && activeTilemap != null) renderTilePaletteWindow(activeTilemap);
+        if (showProjectSettings) renderProjectSettingsWindow();
 
-        if (showViewport) {
-            renderViewport(framebuffer, currentScene, activeTilemap);
+        // 4. SIMULACIÓN Y DIÁLOGOS
+        simulationPanel.update(dt, currentScene, sceneHierarchy);
+        DialogueManager.update(dt);
+        if (DialogueManager.isActive() && org.ravenEngine.io.KeyListener.keyBeginPress(org.lwjgl.glfw.GLFW.GLFW_KEY_E)) {
+            DialogueManager.advance();
         }
 
-        if (showTools) {
-            renderToolsWindow(activeTilemap);
-        }
-
-        if (tileEditMode && activeTilemap != null) {
-            renderTilePaletteWindow(activeTilemap);
-        }
-
-        // 4. CONTROLES DE SIMULACIÓN
-        renderSimulationControls(dt, currentScene);
-
-        // 5. EDITOR DE CODIGO
         codeEditorWindow.update();
 
-        // 6. RENDERIZADO FINAL EN OPENGL
+        // 5. RENDER FINAL
         ImGui.render();
         imGuiGl3.renderDrawData(ImGui.getDrawData());
+    }
+
+    private void handleGlobalHotkeys(ImGuiIO io, Scene currentScene) {
+        if (io.getKeyCtrl() && ImGui.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_S, false)) {
+            saveCurrentScene(currentScene);
+        }
+        if (ImGui.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_F1, false) && currentScene != null) {
+            currentScene.toggleDebugMode();
+        }
+        if (!Engine.IsPlaying() && !io.getWantTextInput()) {
+            if (io.getKeyCtrl() && ImGui.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_Z, false)) {
+                CommandHistory.undo();
+            } else if (io.getKeyCtrl() && (ImGui.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_Y, false) ||
+                    (io.getKeyShift() && ImGui.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_Z, false)))) {
+                CommandHistory.redo();
+            }
+        }
+    }
+
+    private void renderInspector(Scene currentScene) {
+        sceneHierarchy.update(currentScene);
+        inspectorWindow.update(sceneHierarchy.getSelectedGameObject());
+    }
+
+    private void renderViewport(FrameBuffer framebuffer, Scene currentScene, Tilemap activeTilemap) {
+        ImGui.begin("Scene Viewport", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
+        if (framebuffer != null) {
+            ImVec2 windowSize = new ImVec2();
+            ImGui.getContentRegionAvail(windowSize);
+            ImVec2 cursorPos = new ImVec2();
+            ImGui.getCursorScreenPos(cursorPos);
+
+            ImGui.image(framebuffer.getTextureId(), windowSize.x, windowSize.y, 0, 1, 1, 0);
+            handleViewportDragDrop(currentScene, cursorPos, windowSize);
+
+            if (ImGui.isItemHovered()) {
+                handleViewportInput(currentScene, activeTilemap, cursorPos, windowSize);
+            } else {
+                isDraggingObject = false;
+                currentGizmoMode = GizmoRenderer.GizmoMode.NONE;
+            }
+
+            renderDialogueBox(cursorPos, windowSize);
+        }
+        ImGui.end();
+    }
+
+    private void handleViewportDragDrop(Scene scene, ImVec2 cursorPos, ImVec2 windowSize) {
+        if (ImGui.beginDragDropTarget()) {
+            Object payload = ImGui.acceptDragDropPayload("CONTENT_BROWSER_ITEM");
+            if (payload != null && scene != null) {
+                String path = (payload instanceof byte[]) ? new String((byte[]) payload) : payload.toString();
+                ImVec2 mousePos = ImGui.getMousePos();
+                Vector2f dropWorld = scene.getCamera().screenToWorld(mousePos.x - cursorPos.x, mousePos.y - cursorPos.y, windowSize.x, windowSize.y);
+
+                if (path.endsWith(".prefab")) {
+                    spawnPrefabAt(path, dropWorld, scene);
+                } else if (path.endsWith(".png") || path.endsWith(".jpg")) {
+                    String name = new java.io.File(path).getName().replaceFirst("[.][^.]+$", "");
+                    spawnSpriteAt(name, path, dropWorld, scene);
+                }
+            }
+            ImGui.endDragDropTarget();
+        }
+    }
+
+    private void handleViewportInput(Scene scene, Tilemap tilemap, ImVec2 cursorPos, ImVec2 windowSize) {
+        if (scene == null || scene.getCamera() == null) return;
+        var camera = scene.getCamera();
+        ImVec2 mousePos = ImGui.getMousePos();
+        float localX = mousePos.x - cursorPos.x;
+        float localY = mousePos.y - cursorPos.y;
+
+        if (!Engine.IsPlaying() && toolsPanel.isShowGrid()) {
+            renderEditorGrid(camera, windowSize);
+        }
+
+        Vector2f world = camera.screenToWorld(localX, localY, windowSize.x, windowSize.y);
+
+        // Atajos en Viewport (W, R, G, Supr, Ctrl+D, F)
+        if (!Engine.IsPlaying() && !ImGui.getIO().getWantTextInput()) {
+            if (ImGui.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_W, false)) toolsPanel.setCurrentGizmoType(GizmoRenderer.GizmoType.TRANSLATE);
+            if (ImGui.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_R, false)) toolsPanel.setCurrentGizmoType(GizmoRenderer.GizmoType.SCALE);
+            if (ImGui.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_G, false)) toolsPanel.setShowGrid(!toolsPanel.isShowGrid());
+            if (ImGui.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_DELETE)) deleteSelectedObject(scene);
+            if (ImGui.getIO().getKeyCtrl() && ImGui.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_D, false)) duplicateSelectedObject(scene);
+            if (ImGui.isKeyPressed(org.lwjgl.glfw.GLFW.GLFW_KEY_F, false)) focusOnSelectedObject(scene);
+        }
+
+        // Paneo y Zoom
+        if (!Engine.IsPlaying() && (ImGui.isMouseDown(2) || (!toolsPanel.isTileEditMode() && ImGui.isMouseDown(1)))) {
+            float dx = mousePos.x - lastMousePos.x;
+            float dy = mousePos.y - lastMousePos.y;
+            camera.position.x -= dx * ((camera.getProjectionWidth() * camera.getZoom()) / windowSize.x);
+            camera.position.y += dy * ((camera.getProjectionHeight() * camera.getZoom()) / windowSize.y);
+        }
+        if (!Engine.IsPlaying() || Engine.IsPaused()) {
+            float wheel = ImGui.getIO().getMouseWheel();
+            if (wheel != 0.0f) camera.addZoom(wheel);
+        }
+
+        // Modo Pincel vs Manipulación con Gizmos
+        if (toolsPanel.isTileEditMode() && tilemap != null) {
+            Vector2f grid = tilemap.worldToGrid(world.x, world.y);
+            if (ImGui.isMouseDown(0)) tilemap.setTile((int) grid.x, (int) grid.y, selectedTileIndex);
+            else if (ImGui.isMouseDown(1)) tilemap.setTile((int) grid.x, (int) grid.y, -1);
+        } else {
+            processGizmoInteraction(scene, world);
+        }
+
+        lastMousePos.set(mousePos.x, mousePos.y);
+    }
+
+    private void processGizmoInteraction(Scene scene, Vector2f world) {
+        GameObject selected = getSelectedGameObject();
+        GizmoRenderer.GizmoMode hovered = (selected != null && !isDraggingObject) ? GizmoRenderer.testHit(selected, world) : GizmoRenderer.GizmoMode.NONE;
+
+        if (ImGui.isMouseClicked(0)) {
+            if (selected != null && hovered != GizmoRenderer.GizmoMode.NONE) {
+                currentGizmoMode = hovered;
+                isDraggingObject = true;
+                startTransformDrag(selected, world);
+            } else {
+                pickObjectAt(world.x, world.y, scene);
+                selected = getSelectedGameObject();
+                if (selected != null && selected.transform != null) {
+                    currentGizmoMode = GizmoRenderer.GizmoMode.FREE;
+                    isDraggingObject = true;
+                    startTransformDrag(selected, world);
+                }
+            }
+        }
+
+        if (!Engine.IsPlaying() && isDraggingObject && ImGui.isMouseDown(0) && selected != null && selected.transform != null) {
+            applyGizmoDrag(selected, world);
+        } else if (!ImGui.isMouseDown(0)) {
+            finishTransformDrag(selected);
+        }
+
+        if (selected != null) {
+            GizmoRenderer.renderGizmos(selected, isDraggingObject ? currentGizmoMode : hovered, toolsPanel.getCurrentGizmoType());
+        }
+    }
+
+    private void startTransformDrag(GameObject go, Vector2f world) {
+        if (go.transform == null) return;
+        transformStartPos.set(go.transform.pos);
+        transformStartScale.set(go.transform.scale);
+        initialScale.set(go.transform.scale);
+        dragStartMouse.set(world);
+        dragOffset.set(world.x - go.transform.pos.x, world.y - go.transform.pos.y);
+    }
+
+    private void applyGizmoDrag(GameObject selected, Vector2f world) {
+        boolean snap = toolsPanel.isSnapToGrid() || ImGui.getIO().getKeyCtrl();
+        float step = toolsPanel.getSnapGridSize();
+
+        if (toolsPanel.getCurrentGizmoType() == GizmoRenderer.GizmoType.TRANSLATE) {
+            float rawX = snap ? applyGridSnap(world.x - dragOffset.x, step) : world.x - dragOffset.x;
+            float rawY = snap ? applyGridSnap(world.y - dragOffset.y, step) : world.y - dragOffset.y;
+            if (currentGizmoMode == GizmoRenderer.GizmoMode.AXIS_X || currentGizmoMode == GizmoRenderer.GizmoMode.FREE) selected.transform.pos.x = rawX;
+            if (currentGizmoMode == GizmoRenderer.GizmoMode.AXIS_Y || currentGizmoMode == GizmoRenderer.GizmoMode.FREE) selected.transform.pos.y = rawY;
+        } else {
+            float dx = snap ? applyGridSnap(world.x - dragStartMouse.x, step) : world.x - dragStartMouse.x;
+            float dy = snap ? applyGridSnap(world.y - dragStartMouse.y, step) : world.y - dragStartMouse.y;
+            if (currentGizmoMode == GizmoRenderer.GizmoMode.AXIS_X) selected.transform.scale.x = Math.max(step, initialScale.x + dx);
+            else if (currentGizmoMode == GizmoRenderer.GizmoMode.AXIS_Y) selected.transform.scale.y = Math.max(step, initialScale.y + dy);
+            else if (currentGizmoMode == GizmoRenderer.GizmoMode.FREE) {
+                float avg = snap ? applyGridSnap((dx + dy) * 0.5f, step) : (dx + dy) * 0.5f;
+                selected.transform.scale.set(Math.max(step, initialScale.x + avg), Math.max(step, initialScale.y + avg));
+            }
+        }
+    }
+
+    private void finishTransformDrag(GameObject selected) {
+        if (isDraggingObject && selected != null && selected.transform != null) {
+            if (!transformStartPos.equals(selected.transform.pos) || !transformStartScale.equals(selected.transform.scale)) {
+                CommandHistory.executeCommand(new TransformCommand(selected, transformStartPos, selected.transform.pos, transformStartScale, selected.transform.scale));
+            }
+        }
+        isDraggingObject = false;
+        currentGizmoMode = GizmoRenderer.GizmoMode.NONE;
+    }
+
+    private void renderEditorGrid(org.ravenEngine.renderer.Camera camera, ImVec2 windowSize) {
+        Vector2f tl = camera.screenToWorld(0, 0, windowSize.x, windowSize.y);
+        Vector2f br = camera.screenToWorld(windowSize.x, windowSize.y, windowSize.x, windowSize.y);
+        float minX = Math.min(tl.x, br.x), maxX = Math.max(tl.x, br.x);
+        float minY = Math.min(tl.y, br.y), maxY = Math.max(tl.y, br.y);
+
+        float step = toolsPanel.getSnapGridSize();
+        while (((maxX - minX) / step) > 140.0f) step *= 2.0f;
+
+        float startX = (float) Math.floor(minX / step) * step;
+        float startY = (float) Math.floor(minY / step) * step;
+
+        org.joml.Vector3f gridCol = new org.joml.Vector3f(0.18f, 0.20f, 0.25f);
+        for (float x = startX; x <= maxX; x += step) {
+            org.ravenEngine.renderer.DebugDraw.addLine2D(new Vector2f(x, minY), new Vector2f(x, maxY), (Math.abs(x) < 0.001f) ? new org.joml.Vector3f(0.22f, 0.45f, 0.22f) : gridCol);
+        }
+        for (float y = startY; y <= maxY; y += step) {
+            org.ravenEngine.renderer.DebugDraw.addLine2D(new Vector2f(minX, y), new Vector2f(maxX, y), (Math.abs(y) < 0.001f) ? new org.joml.Vector3f(0.45f, 0.22f, 0.22f) : gridCol);
+        }
+    }
+
+    private void setupDockSpace() {
+        ImGuiViewport vp = ImGui.getMainViewport();
+        ImGui.setNextWindowPos(vp.getWorkPosX(), vp.getWorkPosY());
+        ImGui.setNextWindowSize(vp.getWorkSizeX(), vp.getWorkSizeY());
+        ImGui.pushStyleVar(ImGuiStyleVar.WindowRounding, 0.0f);
+        ImGui.pushStyleVar(ImGuiStyleVar.WindowBorderSize, 0.0f);
+        ImGui.pushStyleVar(ImGuiStyleVar.WindowPadding, 0.0f, 0.0f);
+        ImGui.begin("DockSpaceDemo", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoNavFocus);
+        ImGui.popStyleVar(3);
+        ImGui.dockSpace(ImGui.getID("RavenEngineDockSpace"), 0.0f, 0.0f, ImGuiDockNodeFlags.None);
+        ImGui.end();
+    }
+
+    private void renderMenuBar() {
+        if (ImGui.beginMainMenuBar()) {
+            if (ImGui.beginMenu("File")) {
+                if (ImGui.menuItem("Nueva Escena")) {
+                    Scene current = Engine.getCurrentScene();
+                    if (current != null) {
+                        current.getGameObjects().clear();
+                        if (current.getPhysics2D() != null) current.getPhysics2D().clear();
+                        currentScenePath = null;
+                        sceneHierarchy.setSelectedGameObject(null);
+                    }
+                }
+                if (ImGui.menuItem("Guardar Escena", "Ctrl+S")) saveCurrentScene(Engine.getCurrentScene());
+                if (ImGui.menuItem("Configuración del Proyecto")) showProjectSettings = !showProjectSettings;
+                if (ImGui.menuItem("Salir")) System.exit(0);
+                ImGui.endMenu();
+            }
+            if (ImGui.beginMenu("Ventana")) {
+                if (ImGui.menuItem("Terminal", null, showConsole)) showConsole = !showConsole;
+                if (ImGui.menuItem("Explorador de Archivos", null, showContentBrowser)) showContentBrowser = !showContentBrowser;
+                if (ImGui.menuItem("Inspector y Jerarquía", null, showInspector)) showInspector = !showInspector;
+                if (ImGui.menuItem("Scene Viewport", null, showViewport)) showViewport = !showViewport;
+                if (ImGui.menuItem("Herramientas", null, showTools)) showTools = !showTools;
+                ImGui.endMenu();
+            }
+            ImGui.endMainMenuBar();
+        }
+    }
+
+    private void renderProjectSettingsWindow() {
+        ImGui.begin("Configuración del Proyecto", ImGuiWindowFlags.AlwaysAutoResize);
+        var settings = org.ravenEngine.core.ProjectSettings.get();
+        ImGui.inputText("Nombre", titleBuffer);
+        ImGui.inputText("Escena Inicial", scenePathBuffer);
+        if (ImGui.button("Guardar Cambios")) {
+            settings.gameTitle = titleBuffer.get().trim();
+            settings.defaultScenePath = scenePathBuffer.get().trim();
+            settings.save();
+            showProjectSettings = false;
+        }
+        ImGui.end();
+    }
+
+    private void renderTilePaletteWindow(Tilemap tilemap) {
+        ImGui.begin("Paleta de Tiles");
+        Spritesheet sheet = tilemap.getSpritesheet();
+        if (sheet != null && sheet.size() > 0) {
+            int texId = sheet.getSprite(0).getTexture().getTextureId();
+            for (int i = 0; i < sheet.size(); i++) {
+                Vector2f[] uv = sheet.getSprite(i).getTexCoords();
+                ImGui.pushID(i);
+                if (ImGui.imageButton(texId, 32, 32, uv[2].x, uv[2].y, uv[0].x, uv[0].y)) selectedTileIndex = i;
+                ImGui.popID();
+                if ((i + 1) % 4 != 0 && (i + 1) < sheet.size()) ImGui.sameLine();
+            }
+        }
+        ImGui.end();
+    }
+
+    private void renderDialogueBox(ImVec2 pos, ImVec2 size) {
+        if (!DialogueManager.isActive()) return;
+        float w = Math.min(size.x * 0.90f, 640.0f);
+        ImGui.setNextWindowPos(pos.x + (size.x - w) * 0.5f, pos.y + size.y - 141.0f);
+        ImGui.setNextWindowSize(w, 125.0f);
+        if (ImGui.begin("##Dialogue", ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove)) {
+            ImGui.text(DialogueManager.getDisplayedText());
+        }
+        ImGui.end();
+    }
+
+    private float applyGridSnap(float v, float step) { return Math.round(v / step) * step; }
+
+    private void pickObjectAt(float x, float y, Scene s) {
+        if (s == null) return;
+        List<GameObject> objs = s.getGameObjects();
+        for (int i = objs.size() - 1; i >= 0; i--) {
+            GameObject go = objs.get(i);
+            if (go.transform == null) continue;
+            if (x >= go.transform.pos.x && x <= go.transform.pos.x + go.transform.scale.x &&
+                    y >= go.transform.pos.y && y <= go.transform.pos.y + go.transform.scale.y) {
+                sceneHierarchy.setSelectedGameObject(go);
+                return;
+            }
+        }
+        sceneHierarchy.setSelectedGameObject(null);
+    }
+
+    private Tilemap findActiveTilemap(Scene s) {
+        if (s == null) return null;
+        for (GameObject go : s.getGameObjects()) {
+            Tilemap tm = go.getComponent(Tilemap.class);
+            if (tm != null) return tm;
+        }
+        return null;
+    }
+
+    private void duplicateSelectedObject(Scene scene) {
+        GameObject sel = getSelectedGameObject();
+        if (sel == null || scene == null) return;
+        String json = org.ravenEngine.util.ComponentSerializer.getGson().toJson(sel);
+        GameObject copy = org.ravenEngine.util.ComponentSerializer.getGson().fromJson(json, GameObject.class);
+        if (copy != null && copy.transform != null) {
+            copy.setName(sel.getName() + " (Copy)");
+            copy.transform.pos.add(16.0f, 16.0f);
+            for (var c : copy.getComponents()) c.gameObject = copy;
+            scene.addGameObjectToScene(copy);
+            sceneHierarchy.setSelectedGameObject(copy);
+        }
+    }
+
+    private void deleteSelectedObject(Scene scene) {
+        GameObject sel = getSelectedGameObject();
+        if (sel != null && scene != null) {
+            sceneHierarchy.setSelectedGameObject(null);
+            CommandHistory.executeCommand(new DeleteGameObjectCommand(scene, sel));
+        }
+    }
+
+    private void focusOnSelectedObject(Scene scene) {
+        GameObject sel = getSelectedGameObject();
+        if (sel != null && scene != null && scene.getCamera() != null) {
+            var cam = scene.getCamera();
+            cam.position.set(sel.transform.pos.x + sel.transform.scale.x * 0.5f - (cam.getProjectionWidth() * cam.getZoom()) * 0.5f,
+                    sel.transform.pos.y + sel.transform.scale.y * 0.5f - (cam.getProjectionHeight() * cam.getZoom()) * 0.5f);
+        }
+    }
+
+    public void saveCurrentScene(Scene scene) {
+        if (scene != null && currentScenePath != null) scene.save(currentScenePath);
+    }
+
+    public void loadSceneFromPath(String path, Scene scene) {
+        if (scene != null && path != null && path.endsWith(".json")) {
+            scene.load(path);
+            currentScenePath = path;
+            sceneHierarchy.setSelectedGameObject(null);
+        }
+    }
+
+    private void spawnSpriteAt(String name, String path, Vector2f pos, Scene s) {
+        GameObject go = new GameObject(name);
+        var tex = org.ravenEngine.util.AssetPool.getTexture(path);
+        float w = (tex != null && tex.getWidth() > 0) ? tex.getWidth() : 32.0f;
+        float h = (tex != null && tex.getHeight() > 0) ? tex.getHeight() : 32.0f;
+        go.transform.pos.set(pos.x - w * 0.5f, pos.y - h * 0.5f);
+        go.transform.scale.set(w, h);
+        if (tex != null) go.addComponent(new org.ravenEngine.renderer.SpriteRenderer(new Sprite(tex)));
+        s.addGameObjectToScene(go);
+        sceneHierarchy.setSelectedGameObject(go);
+    }
+
+    private void spawnPrefabAt(String path, Vector2f pos, Scene s) {
+        try (var r = new java.io.FileReader(path)) {
+            GameObject go = org.ravenEngine.util.ComponentSerializer.getGson().fromJson(r, GameObject.class);
+            if (go != null && go.transform != null) {
+                go.transform.pos.set(pos.x - go.transform.scale.x * 0.5f, pos.y - go.transform.scale.y * 0.5f);
+                for (var c : go.getComponents()) c.gameObject = go;
+                s.addGameObjectToScene(go);
+                sceneHierarchy.setSelectedGameObject(go);
+            }
+        } catch (Exception e) { e.printStackTrace(); }
     }
 
     public void destroy() {
@@ -160,544 +498,6 @@ public class ImGuiLayer {
         ImGui.destroyContext();
     }
 
-
-    // ==========================================
-    // FUNCIONES DE RENDER (PANELES E INTERFAZ)
-    // ==========================================
-
-    private void setupDockSpace() {
-        int windowFlags = ImGuiWindowFlags.NoDocking;
-
-        ImGuiViewport mainViewport = ImGui.getMainViewport();
-        ImGui.setNextWindowPos(mainViewport.getWorkPosX(), mainViewport.getWorkPosY());
-        ImGui.setNextWindowSize(mainViewport.getWorkSizeX(), mainViewport.getWorkSizeY());
-        ImGui.setNextWindowViewport(mainViewport.getID());
-
-        ImGui.pushStyleVar(ImGuiStyleVar.WindowRounding, 0.0f);
-        ImGui.pushStyleVar(ImGuiStyleVar.WindowBorderSize, 0.0f);
-        windowFlags |= ImGuiWindowFlags.NoTitleBar | ImGuiWindowFlags.NoCollapse
-                | ImGuiWindowFlags.NoResize | ImGuiWindowFlags.NoMove
-                | ImGuiWindowFlags.NoBringToFrontOnFocus | ImGuiWindowFlags.NoNavFocus;
-
-        ImGui.pushStyleVar(ImGuiStyleVar.WindowPadding, 0.0f, 0.0f);
-        ImGui.begin("DockSpaceDemo", windowFlags);
-        ImGui.popStyleVar(3);
-
-        int dockSpaceId = ImGui.getID("RavenEngineDockSpace");
-        ImGui.dockSpace(dockSpaceId, 0.0f, 0.0f, ImGuiDockNodeFlags.None);
-
-        ImGui.end();
-    }
-
-    private void renderMenuBar() {
-        if (ImGui.beginMainMenuBar()) {
-
-            // MENÚ FILE
-            if (ImGui.beginMenu("File")) {
-                if (ImGui.menuItem("Nueva Escena")) {
-                    Scene current = Engine.getCurrentScene();
-                    if (current != null) {
-                        current.getGameObjects().clear();
-                        System.out.println("[IDE] Escena limpiada.");
-                    }
-                }
-
-                if (ImGui.menuItem("Guardar Escena", "Ctrl+S")) {
-                    Scene current = Engine.getCurrentScene();
-                    if (current != null) {
-                        current.save("src/main/java/org/alchemistShop/assets/level1.json");
-                    }
-                }
-
-                if (ImGui.menuItem("Recargar Escena")) {
-                    Scene current = Engine.getCurrentScene();
-                    if (current != null) {
-                        current.load("src/main/java/org/alchemistShop/assets/level1.json");
-                    }
-                }
-
-                if (ImGui.menuItem("Editor de Código", null, codeEditorWindow.isOpen())) {
-                    codeEditorWindow.setOpen(!codeEditorWindow.isOpen());
-                }
-
-                ImGui.separator();
-
-                //Exportación STANDALONE
-                if (ImGui.menuItem("Exportar Juego(Release)")){
-                    ProjectExporter.exportBuild("src/main/java/org/alchemistShop/assets/level1.json");
-                }
-
-                if (ImGui.menuItem("Salir")) {
-                    System.exit(0);
-                }
-
-                ImGui.endMenu();
-            }
-
-            // MENÚ VENTANA
-            if (ImGui.beginMenu("Ventana")) {
-                if (ImGui.menuItem("Terminal", null, showConsole)) {
-                    showConsole = !showConsole;
-                }
-                if (ImGui.menuItem("Explorador de Archivos", null, showContentBrowser)) {
-                    showContentBrowser = !showContentBrowser;
-                }
-                if (ImGui.menuItem("Inventario", null, showInventory)) {
-                    showInventory = !showInventory;
-                }
-                if (ImGui.menuItem("Inspector y Jerarquía", null, showInspector)) {
-                    showInspector = !showInspector;
-                }
-                if (ImGui.menuItem("Scene Viewport", null, showViewport)) {
-                    showViewport = !showViewport;
-                }
-                if (ImGui.menuItem("Herramientas", null, showTools)) {
-                    showTools = !showTools;
-                }
-
-                ImGui.separator();
-                if (ImGui.menuItem("Restaurar Paneles")) {
-                    showConsole = true;
-                    showContentBrowser = true;
-                    showInventory = true;
-                    showInspector = true;
-                    showViewport = true;
-                    showTools = true;
-                    codeEditorWindow.setOpen(true);
-                }
-
-                ImGui.endMenu();
-            }
-
-            // MENÚ HELP
-            if (ImGui.beginMenu("Help")) {
-                if (ImGui.menuItem("Acerca de RavenEngine")) {
-                    System.out.println("[RavenEngine IDE] Motor 2D en Java + LWJGL + OpenGL");
-                }
-                ImGui.endMenu();
-            }
-
-            ImGui.endMainMenuBar();
-        }
-    }
-
-    private void renderViewport(FrameBuffer framebuffer, Scene currentScene, Tilemap activeTilemap) {
-        ImGui.begin("Scene Viewport", ImGuiWindowFlags.NoScrollbar | ImGuiWindowFlags.NoScrollWithMouse);
-
-        if (framebuffer != null) {
-            ImVec2 windowSize = new ImVec2();
-            ImGui.getContentRegionAvail(windowSize);
-
-            ImVec2 cursorPos = new ImVec2();
-            ImGui.getCursorScreenPos(cursorPos);
-
-            // Dibujar Framebuffer invertido para el sistema de coordenadas de OpenGL
-            ImGui.image(framebuffer.getTextureId(), windowSize.x, windowSize.y, 0, 1, 1, 0);
-
-            // ENTRADA DEL MOUSE EN EL VIEWPORT
-            if (ImGui.isWindowHovered()) {
-                ImVec2 mousePos = ImGui.getMousePos();
-
-                float localX = mousePos.x - cursorPos.x;
-                float localY = mousePos.y - cursorPos.y;
-
-                if (currentScene != null && currentScene.getCamera() != null) {
-                    var camera = currentScene.getCamera();
-                    Vector2f worldCoords = camera.screenToWorld(localX, localY, windowSize.x, windowSize.y);
-
-                    // 1. PANEO DE CÁMARA
-                    boolean panButtonDown = ImGui.isMouseDown(2) || (!tileEditMode && ImGui.isMouseDown(1));
-
-                    if (!Engine.IsPlaying() && panButtonDown) {
-                        float dx = mousePos.x - lastMousePos.x;
-                        float dy = mousePos.y - lastMousePos.y;
-
-                        float worldUnitsPerPixelX = 640.0f / windowSize.x;
-                        float worldUnitsPerPixelY = 360.0f / windowSize.y;
-
-                        camera.position.x -= dx * worldUnitsPerPixelX;
-                        camera.position.y += dy * worldUnitsPerPixelY;
-                    }
-
-                    // 2. ZOOM CON LA RUEDA
-                    if (!Engine.IsPlaying() || Engine.IsPaused()) {
-                        float wheel = ImGui.getIO().getMouseWheel();
-                        if (wheel != 0.0f) {
-                            camera.addZoom(wheel);
-                        }
-                    }
-
-                    // 3. EDICIÓN: PINCEL DE TILES VS ARRASTRE DE GAMEOBJECTS
-                    if (tileEditMode && activeTilemap != null) {
-                        Vector2f grid = activeTilemap.worldToGrid(worldCoords.x, worldCoords.y);
-                        int gx = (int) grid.x;
-                        int gy = (int) grid.y;
-
-                        if (ImGui.isMouseDown(0)) {
-                            if (activeTilemap.getTile(gx, gy) != selectedTileIndex) {
-                                activeTilemap.setTile(gx, gy, selectedTileIndex);
-                            }
-                        } else if (ImGui.isMouseDown(1)) {
-                            if (activeTilemap.getTile(gx, gy) != -1) {
-                                activeTilemap.setTile(gx, gy, -1);
-                            }
-                        }
-                    } else {
-                        GameObject selected = getSelectedGameObject();
-
-                        if (ImGui.isMouseClicked(0)) {
-                            pickObjectAt(worldCoords.x, worldCoords.y, currentScene);
-                            selected = getSelectedGameObject();
-
-                            if (selected != null && selected.transform != null) {
-                                isDraggingObject = true;
-                                dragOffset.set(
-                                        worldCoords.x - selected.transform.pos.x,
-                                        worldCoords.y - selected.transform.pos.y
-                                );
-                            }
-                        }
-
-                        if (!Engine.IsPlaying() && isDraggingObject && ImGui.isMouseDown(0)) {
-                            if (selected != null && selected.transform != null) {
-                                selected.transform.pos.x = worldCoords.x - dragOffset.x;
-                                selected.transform.pos.y = worldCoords.y - dragOffset.y;
-                            }
-                        } else if (!ImGui.isMouseDown(0)) {
-                            isDraggingObject = false;
-                        }
-                    }
-
-                    lastMousePos.set(mousePos.x, mousePos.y);
-                }
-            } else {
-                isDraggingObject = false;
-            }
-        }
-
-        ImGui.end();
-    }
-
-    private void renderInspector(Scene currentScene) {
-        sceneHierarchy.update(currentScene);
-        inspectorWindow.update(sceneHierarchy.getSelectedGameObject());
-    }
-
-    private void renderToolsWindow(Tilemap activeTilemap) {
-        ImGui.begin("Herramientas");
-        ImGui.text("RavenEngine IDE");
-        ImGui.separator();
-
-        if (ImGui.button("Modo Pincel de Tiles")) {
-            tileEditMode = !tileEditMode;
-        }
-
-        if (tileEditMode) {
-            ImGui.textColored(0.2f, 0.8f, 0.2f, 1.0f, "[Pincel Activo]");
-            ImGui.text("Clic Izq: Pintar | Clic Der: Borrar");
-        } else {
-            ImGui.textColored(0.8f, 0.8f, 0.2f, 1.0f, "[Modo Selección]");
-        }
-        ImGui.end();
-    }
-
-    private void renderInventoryWindow() {
-        ImGui.begin("Bolsa del alquimista");
-        Scene scene = Engine.getCurrentScene();
-        if (scene == null) {
-            ImGui.textDisabled("Sin escena activa");
-            ImGui.end();
-            return;
-        }
-
-        // Buscar a RavenTom para obtener su inventario
-        GameObject player = null;
-        for (GameObject go : scene.getGameObjects()) {
-            if ("RavenTom".equals(go.getName())) {
-                player = go;
-                break;
-            }
-        }
-        if (player == null) {
-            ImGui.textDisabled("No se encontró al personaje");
-            ImGui.end();
-            return;
-        }
-
-        Inventory inventory = player.getComponent(Inventory.class);
-        if (inventory == null) {
-            ImGui.textDisabled("El personaje no tiene componente Inventory");
-            ImGui.end();
-            return;
-        }
-
-        Map< String, Integer > items = inventory.getItems();
-
-        if (items == null || items.isEmpty()) {
-            ImGui.textColored(0.7f, 0.7f, 0.7f, 1.0f, "La bolsa está vacía.");
-        } else {
-            ImGui.columns(3, "InventoryColumns", true);
-            ImGui.textColored(0.9f, 0.8f, 0.2f, 1.0f, "Objeto");
-            ImGui.nextColumn();
-            ImGui.textColored(0.9f, 0.8f, 0.2f, 1.0f, "Cant.");
-            ImGui.nextColumn();
-            ImGui.textColored(0.9f, 0.8f, 0.2f, 1.0f, "Acciones");
-            ImGui.nextColumn();
-            ImGui.separator();
-
-            String itemToUse = null;
-            String itemToDrop = null;
-
-            for (Map.Entry< String, Integer > entry : items.entrySet()) {
-                String itemId = entry.getKey();
-                int amount = entry.getValue();
-
-                ImGui.text(itemId);
-                ImGui.nextColumn();
-
-                ImGui.text("x" + amount);
-                ImGui.nextColumn();
-
-                if (ImGui.button("Usar: " + itemId)) {
-                    itemToUse = itemId;
-                }
-                ImGui.sameLine();
-                if (ImGui.button("Soltar: " + itemId)) {
-                    itemToDrop = itemId;
-                }
-                ImGui.nextColumn();
-            }
-
-            ImGui.columns(1);
-
-            // Procesar acciones de forma segura
-            if (itemToUse != null) {
-                ItemDB.useItem(itemToUse, player);
-                inventory.removeItem(itemToUse, 1);
-            }
-
-            if (itemToDrop != null) {
-                Vector2f dropPos = new Vector2f(
-                        player.transform.pos.x + 20.0f,
-                        player.transform.pos.y
-                );
-
-                if (inventory.removeItem(itemToDrop, 1)) {
-                    GameObject droppedItem = ItemDB.createWorldItem(itemToDrop, dropPos);
-                    scene.spawnGameObject(droppedItem);
-                    System.out.println("[Inventario] Soltaste: " + itemToDrop);
-                }
-            }
-        }
-
-        ImGui.end();
-    }
-
-    private void renderConsoleWindow() {
-        ImGui.begin("Terminal RENGINE");
-
-        if (ImGui.button("Limpiar")) {
-            EngineConsole.clear();
-        }
-        ImGui.sameLine();
-        if (ImGui.checkbox("Auto-Scroll", autoScroll)) {
-            autoScroll = !autoScroll;
-        }
-        ImGui.separator();
-
-        ImGui.beginChild("ConsoleScrollRegion", 0, 0, false, ImGuiWindowFlags.HorizontalScrollbar);
-        synchronized (EngineConsole.getLogs()) {
-            for (String log : EngineConsole.getLogs()) {
-                if (log.startsWith("[ERROR]")) {
-                    ImGui.textColored(1.0f, 0.4f, 0.4f, 1.0f, log);
-                } else if (log.startsWith("[Inventario]")) {
-                    ImGui.textColored(0.4f, 1.0f, 0.4f, 1.0f, log);
-                } else if (log.startsWith("[Scene]")) {
-                    ImGui.textColored(0.4f, 0.8f, 1.0f, 1.0f, log);
-                } else {
-                    ImGui.textUnformatted(log);
-                }
-            }
-        }
-
-        if (autoScroll && ImGui.getScrollY() >= ImGui.getScrollMaxY()) {
-            ImGui.setScrollHereY(1.0f);
-        }
-
-        ImGui.endChild();
-        ImGui.end();
-    }
-
-    private void renderTilePaletteWindow(Tilemap tilemap) {
-        ImGui.begin("Paleta de Tiles");
-
-        Spritesheet sheet = tilemap.getSpritesheet();
-        if (sheet == null || sheet.size() == 0) {
-            ImGui.text("El Tilemap no posee Spritesheet cargado.");
-            ImGui.end();
-            return;
-        }
-
-        if (ImGui.button("Borrador (Vacío)")) {
-            selectedTileIndex = -1;
-        }
-        ImGui.sameLine();
-        ImGui.text(selectedTileIndex == -1 ? "Tile actual: [Borrador]" : "Tile actual: #" + selectedTileIndex);
-
-        ImGui.separator();
-
-        int textureId = sheet.getSprite(0).getTexture().getTextureId();
-        int columns = 4;
-
-        for (int i = 0; i < sheet.size(); i++) {
-            Sprite sprite = sheet.getSprite(i);
-            Vector2f[] uv = sprite.getTexCoords();
-
-            ImGui.pushID(i);
-            if (ImGui.imageButton(textureId, 32, 32, uv[2].x, uv[2].y, uv[0].x, uv[0].y)) {
-                selectedTileIndex = i;
-            }
-            ImGui.popID();
-
-            if ((i + 1) % columns != 0 && (i + 1) < sheet.size()) {
-                ImGui.sameLine();
-            }
-        }
-
-        ImGui.end();
-    }
-
-    private void renderSimulationControls(float dt, Scene currentScene) {
-        ImGui.begin("Control de Juego");
-
-        boolean isPlaying = Engine.IsPlaying();
-        boolean isPaused = Engine.IsPaused();
-
-        if (isPlaying && !isPaused) ImGui.pushStyleColor(ImGuiCol.Button, 0.2f, 0.7f, 0.2f, 1.0f);
-        if (ImGui.button(" > Play ")) {
-            if (!isPlaying) {
-                if (currentScene != null) {
-                    sceneSnapshot = currentScene.serializeToString();
-                    if (currentScene.getCamera() != null) {
-                        currentScene.getCamera().resetZoom();
-                    }
-                }
-                Engine.setPlaying(true);
-                Engine.setPaused(false);
-                if (currentScene != null){
-                    for (GameObject go : currentScene.getGameObjects()){
-                        AudioSource audio = go.getComponent(AudioSource.class);
-                        if (audio != null) audio.play();
-                    }
-                }
-            }
-        }
-        if (isPlaying && !isPaused) ImGui.popStyleColor();
-
-        ImGui.sameLine();
-
-        if (isPaused) ImGui.pushStyleColor(ImGuiCol.Button, 0.8f, 0.8f, 0.2f, 1.0f);
-        if (ImGui.button(" || Pause ")) {
-            if (isPlaying) {
-                Engine.setPaused(!isPaused);
-                if (currentScene != null) {
-                    for (GameObject go : currentScene.getGameObjects()) {
-                        AudioSource audio = go.getComponent(AudioSource.class);
-                        if (audio != null) {
-                            if (Engine.IsPaused()) audio.pause();
-                            else audio.play();
-                        }
-                    }
-                }
-            }
-        }
-        if (isPaused) ImGui.popStyleColor();
-
-        ImGui.sameLine();
-
-        if (!isPlaying) ImGui.pushStyleColor(ImGuiCol.Button, 0.6f, 0.2f, 0.2f, 1.0f);
-        if (ImGui.button(" [] Stop ")) {
-            if (isPlaying || isPaused) {
-                Engine.setPlaying(false);
-                Engine.setPaused(false);
-
-                // Silenciamos todoo de raíz
-                if (currentScene != null) {
-                    for (GameObject go : currentScene.getGameObjects()) {
-                        AudioSource audio = go.getComponent(AudioSource.class);
-                        if (audio != null) audio.stop();
-                    }
-                }
-
-                if (sceneSnapshot != null && currentScene != null) {
-                    currentScene.loadFromString(sceneSnapshot);
-                    if (sceneHierarchy != null) {
-                        sceneHierarchy.setSelectedGameObject(null);
-                    }
-                    System.out.println("[IDE] Escena restaurada al estado de edición.");
-                }
-
-                System.out.println("[Motor] Simulación detenida.");
-            }
-        }
-        if (!isPlaying) ImGui.popStyleColor();
-
-        ImGui.sameLine();
-        ImGui.text(String.format("Estado: %s", !isPlaying ? "Edición (Detenido)" : (isPaused ? "Pausado" : "Simulando (Play)")));
-        ImGui.sameLine();
-        ImGui.text(String.format("FPS: %.1f", 1.0f / dt));
-
-        ImGui.end();
-    }
-
-
-    // ==========================================
-    // FUNCIONES AUXILIARES Y DE SELECCIÓN
-    // ==========================================
-
-    private void pickObjectAt(float worldX, float worldY, Scene scene) {
-        GameObject hitObject = null;
-        List< GameObject > objects = scene.getGameObjects();
-
-        for (int i = objects.size() - 1; i >= 0; i--) {
-            GameObject go = objects.get(i);
-            if (go.transform == null) continue;
-
-            float minX = go.transform.pos.x;
-            float minY = go.transform.pos.y;
-            float maxX = minX + go.transform.scale.x;
-            float maxY = minY + go.transform.scale.y;
-
-            if (worldX >= minX && worldX <= maxX && worldY >= minY && worldY <= maxY) {
-                hitObject = go;
-                break;
-            }
-        }
-
-        sceneHierarchy.setSelectedGameObject(hitObject);
-    }
-
-    private Tilemap findActiveTilemap(Scene scene) {
-        if (scene == null) return null;
-
-        GameObject selected = sceneHierarchy.getSelectedGameObject();
-        if (selected != null && selected.getComponent(Tilemap.class) != null) {
-            return selected.getComponent(Tilemap.class);
-        }
-
-        for (GameObject go : scene.getGameObjects()) {
-            Tilemap tm = go.getComponent(Tilemap.class);
-            if (tm != null) return tm;
-        }
-        return null;
-    }
-
-
-    // ==========================================
-    // GETTERS Y SETTERS
-    // ==========================================
-    public GameObject getSelectedGameObject() {
-        return sceneHierarchy.getSelectedGameObject();
-    }
-    public CodeEditorWindow getCodeEditorWindow() {return codeEditorWindow;}
+    public GameObject getSelectedGameObject() { return sceneHierarchy.getSelectedGameObject(); }
+    public CodeEditorWindow getCodeEditorWindow() { return codeEditorWindow; }
 }

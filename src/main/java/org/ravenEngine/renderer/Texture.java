@@ -69,16 +69,39 @@ public class Texture {
     }
 
     private String resolveResourcePath(String resource) {
+        if (resource == null || resource.isEmpty()) return null;
+
+        // 1. Chequeo directo en disco: si ya es una ruta válida (absoluta o relativa al proyecto)
+        File directFile = new File(resource);
+        if (directFile.exists()) {
+            return directFile.getAbsolutePath();
+        }
+
+        // 2. Si viene con prefijo "./", lo limpiamos y probamos de nuevo
+        if (resource.startsWith("./")) {
+            File cleanRelative = new File(resource.substring(2));
+            if (cleanRelative.exists()) {
+                return cleanRelative.getAbsolutePath();
+            }
+        }
+
+        // 3. Probar dentro de src/main/resources (si le pasaste solo "textures/Frasco.png")
+        String pathWithoutSlash = resource.startsWith("/") ? resource.substring(1) : resource;
+        File inResources = new File("src/main/resources/" + pathWithoutSlash);
+        if (inResources.exists()) {
+            return inResources.getAbsolutePath();
+        }
+
+        // 4. Fallback al ClassLoader de Java / JAR compilado
         String pathWithSlash = resource.startsWith("/") ? resource : "/" + resource;
         URL url = Texture.class.getResource(pathWithSlash);
         if (url != null) {
-            return new File(url.getFile()).getAbsolutePath();
-        }
-
-        String pathWithoutSlash = resource.startsWith("/") ? resource.substring(1) : resource;
-        File file = new File("src/main/resources/" + pathWithoutSlash);
-        if (file.exists()) {
-            return file.getAbsolutePath();
+            try {
+                // toURI().getPath() decodifica espacios (%20) y caracteres especiales correctamente
+                return new File(url.toURI().getPath()).getAbsolutePath();
+            } catch (Exception e) {
+                return new File(url.getFile()).getAbsolutePath();
+            }
         }
 
         return null;

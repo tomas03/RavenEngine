@@ -19,36 +19,45 @@ public class Engine {
     private boolean isRunning;
     private static Scene currentScene;
     private FrameBuffer framebuffer;
-    //Estados de simulación
+
+    // Estados de simulación
     private static boolean isPlaying = false;
     private static boolean isPaused = false;
-
     private static EngineMode currentMode = EngineMode.EDITOR;
 
-    //CONSTRUCTORES
-    public Engine(String title, int width, int height) {
-        this.window = new Window("RavenEngine - AlquimistShop", 1280, 720);
+    // CONSTRUCTORES
+    public Engine() {
+        ProjectSettings settings = ProjectSettings.get();
+        this.window = new Window(settings.gameTitle, settings.windowWidth, settings.windowHeight);
     }
 
+    public Engine(String title, int width, int height) {
+        this.window = new Window(title, width, height);
+    }
 
     public static void changeScene(Scene newScene) {
         currentScene = newScene;
-        currentScene.init(); // Arranca la carga de esa escena específica
+        currentScene.init();
         currentScene.start();
-
     }
 
-    //FUNCIONES
+    // FUNCIONES
     public void start(Scene initialScene) {
-        window.init();
+        ProjectSettings settings = ProjectSettings.get();
 
-        //AUDIO
+        window.init();
         AudioManager.init();
 
-        this.framebuffer = new FrameBuffer(1280, 720);
+        // El FrameBuffer toma las dimensiones configuradas en el proyecto
+        this.framebuffer = new FrameBuffer(settings.windowWidth, settings.windowHeight);
 
         isRunning = true;
         changeScene(initialScene);
+
+        // Cargamos automáticamente la escena por defecto definida en ProjectSettings
+        if (settings.defaultScenePath != null && !settings.defaultScenePath.trim().isEmpty()) {
+            loadScene(settings.defaultScenePath);
+        }
 
         // Bucle del motor
         runLoop();
@@ -58,19 +67,8 @@ public class Engine {
             framebuffer.destroy();
         }
 
-        // Limpieza de ventana y GLFW
         cleanup();
-
-        // Mata el proceso de Java al instante: no quedan procesos zombies en RAM
         System.exit(0);
-    }
-
-    private void update(float dt) {
-        // Aca van a actualizarse las escenas
-    }
-
-    private void render() {
-        // Aca van a dibujarse las escenas
     }
 
     public void runLoop() {
@@ -132,7 +130,6 @@ public class Engine {
                     currentScene.render();
                 }
 
-                // Actualizamos la ventana sin procesar ImGui
                 window.updateRuntime(deltaTime);
                 MouseListener.endFrame();
             }
@@ -141,7 +138,6 @@ public class Engine {
 
     public static void loadScene(String filePath) {
         if (currentScene != null) {
-            // Si estamos en Play, frenamos la simulación para cargar limpios en modo edición
             if (isPlaying) {
                 isPlaying = false;
                 isPaused = false;
@@ -158,8 +154,8 @@ public class Engine {
         window.cleanup();
     }
 
-    //GETTER Y SETTER
-    public static Scene getCurrentScene(){
+    // GETTERS Y SETTERS
+    public static Scene getCurrentScene() {
         return currentScene;
     }
 
@@ -178,7 +174,10 @@ public class Engine {
     public static void setPaused(boolean isPaused) {
         Engine.isPaused = isPaused;
     }
-    public static EngineMode getMode() {return currentMode;}
+
+    public static EngineMode getMode() {
+        return currentMode;
+    }
 
     public static void setMode(EngineMode mode) {
         currentMode = mode;

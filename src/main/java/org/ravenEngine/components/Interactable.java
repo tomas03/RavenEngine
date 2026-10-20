@@ -7,6 +7,7 @@ public abstract class Interactable extends Component {
     //Radio en píxeles donde el personaje puede interactuar con el objeto
     public float interactionRadius = 24.0f;
     protected boolean isPlayerInRange = false;
+    private boolean interacted = false;
 
     public abstract void onInteract(GameObject player);
 
@@ -23,6 +24,15 @@ public abstract class Interactable extends Component {
         this.isPlayerInRange = distanceSquared<=(interactionRadius*interactionRadius);
         return this.isPlayerInRange;
     }
+
+        public boolean canInteract() {
+            return !interacted;
+        }
+
+        public void setInteracted(boolean interacted) {
+            this.interacted = interacted;
+        }
+
 
     public boolean isInRange(){
         return isPlayerInRange;

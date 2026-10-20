@@ -2,7 +2,6 @@ package org.ravenEngine.renderer;
 
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
-import org.joml.Vector3f;
 
 import java.util.Random;
 
@@ -19,15 +18,13 @@ public class Camera {
 
     // --- SISTEMA DE CAMERA SHAKE (TRAUMA-BASED) ---
     private float trauma = 0.0f;
-    private final float traumaDecayRate = 1.4f; // Velocidad con la que se apaga el temblor
-    private final float maxShakeOffset = 18.0f;  // Píxeles máximos de desplazamiento
-    private final float maxShakeAngle = 0.04f;   // Rotación máxima en radianes (~2.3 grados)
+    private final float traumaDecayRate = 1.4f;
+    private final float maxShakeOffset = 18.0f;
+    private final float maxShakeAngle = 0.04f;
     private float shakeAngle = 0.0f;
+    private float shakeOffsetX = 0.0f;
+    private float shakeOffsetY = 0.0f;
     private final Random random = new Random();
-
-    // --- SEGUIMIENTO SUAVE (SMOOTH FOLLOW) ---
-    private Vector2f targetToFollow = null;
-    private float smoothSpeed = 5.0f; // Multiplicador de interpolación
 
     public Camera() {
         adjustProjection();
@@ -48,51 +45,40 @@ public class Camera {
     }
 
     public void update(float dt) {
-        // 1. Seguimiento suave al objetivo (Lerp)
-        if (targetToFollow != null) {
-            float targetX = targetToFollow.x - (projectionWidth * zoom) / 2.0f;
-            float targetY = targetToFollow.y - (projectionHeight * zoom) / 2.0f;
-
-            this.position.x += (targetX - this.position.x) * smoothSpeed * dt;
-            this.position.y += (targetY - this.position.y) * smoothSpeed * dt;
-        }
-
-        // 2. Procesamiento de Camera Shake
-        float shakeOffsetX = 0.0f;
-        float shakeOffsetY = 0.0f;
+        // Procesamiento de Camera Shake
+        shakeOffsetX = 0.0f;
+        shakeOffsetY = 0.0f;
         shakeAngle = 0.0f;
 
         if (trauma > 0.0f) {
-            // El temblor no lineal (trauma al cuadrado) da una sensación más física
             float shakeIntensity = trauma * trauma;
 
             shakeOffsetX = maxShakeOffset * shakeIntensity * ((random.nextFloat() * 2.0f) - 1.0f);
             shakeOffsetY = maxShakeOffset * shakeIntensity * ((random.nextFloat() * 2.0f) - 1.0f);
             shakeAngle   = maxShakeAngle  * shakeIntensity * ((random.nextFloat() * 2.0f) - 1.0f);
 
-            // Reducción del trauma con el paso del tiempo
             trauma = Math.max(trauma - (traumaDecayRate * dt), 0.0f);
         }
-
-        // Posición final combinada enviada a la GPU
-        renderPosition.set(this.position.x + shakeOffsetX, this.position.y + shakeOffsetY);
     }
 
     public Matrix4f getViewMatrix() {
+        // En cada frame sincronizamos la posición real de render
+        renderPosition.set(this.position.x + shakeOffsetX, this.position.y + shakeOffsetY);
+
         viewMatrix.identity();
 
-        // Aplicamos traslación de cámara invertida
-        viewMatrix.translate(-renderPosition.x, -renderPosition.y, 0.0f);
-
-        // Si hay rotación por shake, rotamos alrededor del centro de la pantalla
+        // 1. Si hay rotación por shake, rotamos alrededor del centro de la pantalla
         if (shakeAngle != 0.0f) {
-            float centerX = (projectionWidth * zoom) / 2.0f;
-            float centerY = (projectionHeight * zoom) / 2.0f;
+            float centerX = (projectionWidth * zoom) * 0.5f;
+            float centerY = (projectionHeight * zoom) * 0.5f;
 
             viewMatrix.translate(centerX, centerY, 0.0f);
             viewMatrix.rotateZ(shakeAngle);
             viewMatrix.translate(-centerX, -centerY, 0.0f);
         }
+
+        // 2. Traslación directa de cámara 2D (UNA SOLA VEZ)
+        viewMatrix.translate(-renderPosition.x, -renderPosition.y, 0.0f);
 
         return viewMatrix;
     }
@@ -101,19 +87,8 @@ public class Camera {
         return projectionMatrix;
     }
 
-    /**
-     * Agrega trauma entre 0.0 y 1.0 (se acumula hasta 1.0)
-     */
     public void addTrauma(float amount) {
         this.trauma = Math.min(this.trauma + amount, 1.0f);
-    }
-
-    public void setTarget(Vector2f target) {
-        this.targetToFollow = target;
-    }
-
-    public void setSmoothSpeed(float speed) {
-        this.smoothSpeed = speed;
     }
 
     public void addZoom(float value) {
@@ -128,13 +103,21 @@ public class Camera {
 
     public Vector2f screenToWorld(float screenX, float screenY, float viewportWidth, float viewportHeight) {
         float normalizedX = screenX / viewportWidth;
-        float normalizedY = 1.0f - (screenY / viewportHeight); // Inversión eje Y
+        float normalizedY = 1.0f - (screenY / viewportHeight); // Invertir Y para OpenGL
 
-        float worldX = renderPosition.x + (normalizedX * projectionWidth * zoom);
-        float worldY = renderPosition.y + (normalizedY * projectionHeight * zoom);
+        float worldWidth = this.projectionWidth * this.zoom;
+        float worldHeight = this.projectionHeight * this.zoom;
+
+        // Usamos position directamente si no hay shake, o renderPosition si está temblando
+        float originX = (shakeOffsetX != 0.0f) ? renderPosition.x : position.x;
+        float originY = (shakeOffsetY != 0.0f) ? renderPosition.y : position.y;
+
+        float worldX = originX + (normalizedX * worldWidth);
+        float worldY = originY + (normalizedY * worldHeight);
 
         return new Vector2f(worldX, worldY);
     }
+
     public float getProjectionWidth() {
         return this.projectionWidth;
     }
@@ -146,6 +129,7 @@ public class Camera {
     public float getZoom() {
         return this.zoom;
     }
+
     public Vector2f getProjectionSize() {
         return new Vector2f(this.projectionWidth * this.zoom, this.projectionHeight * this.zoom);
     }

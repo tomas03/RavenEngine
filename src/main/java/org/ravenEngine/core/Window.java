@@ -60,8 +60,8 @@ public class Window {
 
         glfwMakeContextCurrent(windowHandle);
 
-        // VSync activado
-        glfwSwapInterval(1);
+        // VSync según la configuración del proyecto
+        glfwSwapInterval(ProjectSettings.get().vSync ? 1 : 0);
 
         glfwShowWindow(windowHandle);
 
@@ -90,12 +90,17 @@ public class Window {
         glfwSwapBuffers(windowHandle);
         glfwPollEvents();
 
-        // FPS
+        // Actualización dinámica del título de la ventana
         frameCount++;
         double currentTime = glfwGetTime();
         if (currentTime - lastTime >= 0.25) {
             int fps = (int) (frameCount / (currentTime - lastTime));
-            glfwSetWindowTitle(windowHandle, title + " | FPS: " + fps);
+
+            // Nombre del motor fijo + proyecto cargado
+            String gameName = org.ravenEngine.core.ProjectSettings.get().gameTitle;
+            String ideTitle = "RavenEngine IDE - [" + gameName + "] | FPS: " + fps;
+
+            glfwSetWindowTitle(windowHandle, ideTitle);
             frameCount = 0;
             lastTime = currentTime;
         }
