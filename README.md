@@ -61,7 +61,7 @@ RavenEngine/
 │   └── org.alchemistShop/  # Lógica del juego (Items, NPCs, Gameplay)
 └── assets/                 # Texturas, Shaders, Sonidos, Escenas y Prefabs
 ```
-Atajo,Acción
+Atajos de Teclado
 W = Activar herramienta de Traslación (Gizmo flechas)
 R = Activar herramienta de Escala (Gizmo mangos)
 G = Alternar visibilidad de la Grilla
