@@ -25,7 +25,7 @@ public class MouseListener {
         return MouseListener.instance;
     }
 
-    //posicion X,Y del puntero en pixeles de la ventana
+    //posición X,Y del puntero en píxeles de la ventana
     public static void mousePosCallback(long window,double xpos, double ypos){
         get().lastX = get().xPos;
         get().lastY = get().yPos;

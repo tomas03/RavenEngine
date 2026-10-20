@@ -7,14 +7,24 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class GameObject {
-    private final String name;
+    private String name;
     private final List<Component> components;
     public Transform transform;
+    private int zIndex = 0;
 
     public GameObject(String name, Transform transform) {
         this.name = name;
         this.transform = transform;
         this.components = new ArrayList<>();
+    }
+
+    public GameObject(String name, Transform transform, int zIndex) {
+        this(name, transform); // Llama al constructor de arriba que ya hace todo
+        this.zIndex = zIndex;
+    }
+
+    public GameObject(String name) {
+        this(name, new Transform(new org.joml.Vector2f(0.0f, 0.0f)));
     }
 
     public<T extends Component>T getComponent(Class<T> componentClass){
@@ -30,6 +40,9 @@ public class GameObject {
         c.gameObject = this;
         this.components.add(c);
     }
+
+
+
     public void start(){
         for (Component component : components){
             component.start();
@@ -41,5 +54,20 @@ public class GameObject {
         }
     }
 
+    public int getzIndex() {
+        return zIndex;
+    }
+
     public String getName(){return name;}
+
+    public void setName(String name) {this.name = name;}
+
+    public List<Component> getComponents() {
+        return this.components;
+    }
+
+    public List< Component > getAllComponents() {
+        return this.components;
+    }
+
 }

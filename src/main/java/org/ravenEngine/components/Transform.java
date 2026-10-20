@@ -7,6 +7,7 @@ public class Transform {
     public Vector2f scale;
     public int zIndex;
 
+    //CONSTRUCTORES
     public Transform() {
         init(new Vector2f(), new Vector2f(), 0);
     }
@@ -23,6 +24,8 @@ public class Transform {
         init(pos, scale, zIndex);
     }
 
+
+    //INIT
     public void init(Vector2f pos, Vector2f scale, int zIndex) {
         this.pos = pos;
         this.scale = scale;

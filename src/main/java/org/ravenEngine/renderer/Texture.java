@@ -13,9 +13,15 @@ import static org.lwjgl.stb.STBImage.*;
 
 public class Texture {
     private final String filepath;
-    private final int textureId;
+    private transient int textureId;
     private int width;
     private int height;
+
+    // Constructor vacío por defecto para que Gson no rompa
+    public Texture() {
+        this.filepath = "";
+        this.textureId = 0;
+    }
 
     public Texture(String resourcePath) {
         this.filepath = resourcePath;
@@ -54,6 +60,8 @@ public class Texture {
             glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, this.width, this.height, 0, GL_RGBA, GL_UNSIGNED_BYTE, image);
             stbi_image_free(image);
         } else {
+            System.err.println("[Texture ERROR] No se pudo cargar la imagen en: " + filepath);
+            System.err.println("[Texture ERROR] Razón STB: " + stbi_failure_reason());
             throw new RuntimeException("Error al procesar la imagen con STB: " + resolvedPath + " -> " + stbi_failure_reason());
         }
 
@@ -61,16 +69,39 @@ public class Texture {
     }
 
     private String resolveResourcePath(String resource) {
+        if (resource == null || resource.isEmpty()) return null;
+
+        // 1. Chequeo directo en disco: si ya es una ruta válida (absoluta o relativa al proyecto)
+        File directFile = new File(resource);
+        if (directFile.exists()) {
+            return directFile.getAbsolutePath();
+        }
+
+        // 2. Si viene con prefijo "./", lo limpiamos y probamos de nuevo
+        if (resource.startsWith("./")) {
+            File cleanRelative = new File(resource.substring(2));
+            if (cleanRelative.exists()) {
+                return cleanRelative.getAbsolutePath();
+            }
+        }
+
+        // 3. Probar dentro de src/main/resources (si le pasaste solo "textures/Frasco.png")
+        String pathWithoutSlash = resource.startsWith("/") ? resource.substring(1) : resource;
+        File inResources = new File("src/main/resources/" + pathWithoutSlash);
+        if (inResources.exists()) {
+            return inResources.getAbsolutePath();
+        }
+
+        // 4. Fallback al ClassLoader de Java / JAR compilado
         String pathWithSlash = resource.startsWith("/") ? resource : "/" + resource;
         URL url = Texture.class.getResource(pathWithSlash);
         if (url != null) {
-            return new File(url.getFile()).getAbsolutePath();
-        }
-
-        String pathWithoutSlash = resource.startsWith("/") ? resource.substring(1) : resource;
-        File file = new File("src/main/resources/" + pathWithoutSlash);
-        if (file.exists()) {
-            return file.getAbsolutePath();
+            try {
+                // toURI().getPath() decodifica espacios (%20) y caracteres especiales correctamente
+                return new File(url.toURI().getPath()).getAbsolutePath();
+            } catch (Exception e) {
+                return new File(url.getFile()).getAbsolutePath();
+            }
         }
 
         return null;
@@ -84,11 +115,45 @@ public class Texture {
         glBindTexture(GL_TEXTURE_2D, 0);
     }
 
+    public void destroy(){
+        if (this.textureId != 0){
+            glDeleteTextures(this.textureId);
+            this.textureId = 0;
+        }
+    }
+
+
     public int getWidth() {
         return width;
     }
 
     public int getHeight() {
         return height;
+    }
+
+    public int getTextureId() {
+        return textureId;
+    }
+
+    //Override
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        Texture texture = (Texture) o;
+        // Dos texturas son iguales si comparten el mismo ID de GPU o la misma ruta de archivo
+        if (this.textureId != 0 && texture.textureId != 0) {
+            return this.textureId == texture.textureId;
+        }
+        return this.filepath != null && this.filepath.equals(texture.filepath);
+    }
+
+    @Override
+    public int hashCode() {
+        return filepath != null ? filepath.hashCode() : Integer.hashCode(textureId);
+    }
+
+    public String getFilepath() {
+        return filepath;
     }
 }

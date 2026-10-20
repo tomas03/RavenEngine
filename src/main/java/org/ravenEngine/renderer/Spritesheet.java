@@ -9,22 +9,24 @@ public class Spritesheet {
     private final Texture texture;
     private final List< Sprite > sprites;
 
+    // Constructor automático: calcula las columnas según el ancho de la imagen
     public Spritesheet(Texture texture, int spriteWidth, int spriteHeight, int numSprites, int spacing) {
-        this(texture, spriteWidth, spriteHeight, numSprites, spacing, 0, 0);
+        this(texture, spriteWidth, spriteHeight, numSprites, spacing, 0, 0, (texture.getWidth() + spacing) / (spriteWidth + spacing));
     }
 
     public Spritesheet(Texture texture, int spriteWidth, int spriteHeight, int numSprites, int spacing, int startX, int startY) {
+        this(texture, spriteWidth, spriteHeight, numSprites, spacing, startX, startY, (texture.getWidth() - startX + spacing) / (spriteWidth + spacing));
+    }
+
+    public Spritesheet(Texture texture, int spriteWidth, int spriteHeight, int numSprites, int spacing, int startX, int startY, int cols) {
         this.sprites = new ArrayList< >();
         this.texture = texture;
-
-        int cols = 3; // sprites por fila
 
         for (int i = 0; i < numSprites; i++) {
             int col = i % cols;
             int row = i / cols;
 
             int currentX = startX + col * (spriteWidth + spacing);
-            // Invertimos Y porque en OpenGL 0 está abajo y el PNG arranca arriba
             int currentY = texture.getHeight() - startY - ((row + 1) * spriteHeight);
 
             float leftX   = currentX / (float) texture.getWidth();

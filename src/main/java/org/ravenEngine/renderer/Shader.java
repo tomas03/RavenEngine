@@ -51,8 +51,13 @@ public class Shader {
         glUseProgram(0);
     }
 
-    public void cleanup() {
-        glDeleteProgram(shaderProgramId);
+    // import static org.lwjgl.opengl.GL20.*;
+
+    public void destroy() {
+        if (this.shaderProgramId != 0) { // o this.programId
+            glDeleteProgram(this.shaderProgramId);
+            this.shaderProgramId = 0;
+        }
     }
 
     public void uploadInt(String varName, int value) {

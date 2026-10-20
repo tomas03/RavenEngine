@@ -1,9 +1,13 @@
 package org.ravenEngine.core;
 
+import org.lwjgl.glfw.Callbacks;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
+import org.ravenEngine.editor.ImGuiLayer;
 import org.ravenEngine.io.KeyListener;
 import org.ravenEngine.io.MouseListener;
+import org.ravenEngine.renderer.FrameBuffer;
+import org.ravenEngine.scene.Scene;
 
 import static org.lwjgl.glfw.GLFW.*;
 import static org.lwjgl.opengl.GL11.*;
@@ -15,67 +19,139 @@ public class Window {
     private int height;
     private Long windowHandle;
 
+    // Capa de interfaz del editor (ImGui)
+    private ImGuiLayer imGuiLayer;
+
+    // Control de FPS
+    private double lastTime = 0.0;
+    private int frameCount = 0;
+
+    //CONSTRUCTORES
     public Window(String title, int width, int height) {
         this.title = title;
         this.width = width;
         this.height = height;
     }
-    public void init(){
-        //Redirección de los errores nativos de C a la consola de Java
+
+    //FUNCIONES
+    public void init() {
         GLFWErrorCallback.createPrint(System.err).set();
-        //iniciar Libreria GLFW
-        if(!glfwInit()){
-            throw new IllegalStateException("No se pudo incializar GLFW");
+
+        if (!glfwInit()) {
+            throw new IllegalStateException("No se pudo inicializar GLFW");
         }
 
-        //Reglas de creacion de ventana
         glfwDefaultWindowHints();
-        glfwWindowHint(GLFW_VISIBLE,GLFW_FALSE);//va a estar oculta hasta que termine de cargar todoo
-        glfwWindowHint(GLFW_RESIZABLE,GLFW_TRUE);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR,3);
-        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR,3);
-        glfwWindowHint(GLFW_OPENGL_PROFILE,GLFW_OPENGL_CORE_PROFILE);//Usar openGL moderno
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+        glfwWindowHint(GLFW_RESIZABLE, GLFW_TRUE);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+        glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+        glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
-        //Creacion de ventana y guardado de puntero
-        windowHandle = glfwCreateWindow(width,height,title,NULL,NULL);
-        if(windowHandle == NULL){
+        windowHandle = glfwCreateWindow(width, height, title, NULL, NULL);
+        if (windowHandle == NULL) {
             throw new RuntimeException("Fallo al crear la ventana de GLFW");
         }
 
-        // Registrar callbacks de inputs
         glfwSetCursorPosCallback(windowHandle, MouseListener::mousePosCallback);
         glfwSetMouseButtonCallback(windowHandle, MouseListener::mouseButtonCallback);
         glfwSetScrollCallback(windowHandle, MouseListener::mouseScrollCallback);
         glfwSetKeyCallback(windowHandle, KeyListener::keyCallback);
 
-        //unir ventana a hilo de ejecución
         glfwMakeContextCurrent(windowHandle);
 
-        //Activar VSync
-        glfwSwapInterval(1);
+        // VSync según la configuración del proyecto
+        glfwSwapInterval(ProjectSettings.get().vSync ? 1 : 0);
 
-        //Mostrar ventana
         glfwShowWindow(windowHandle);
 
-        //detectar placa de video y cargar las funciones de OpenGL
         GL.createCapabilities();
 
-        //Habilitar transparencias
         glEnable(GL_BLEND);
         glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+        // INICIALIZAR IMGUI DESPUÉS DE HABILITAR OPENGL
+        this.imGuiLayer = new ImGuiLayer(windowHandle);
+        this.imGuiLayer.init();
+
+        // Guardamos el tiempo de inicio
+        lastTime = glfwGetTime();
     }
-    public void update(){
-        //intercambiar buffer de imagen
+
+    // Renderiza la UI de ImGui encima de la escena y swapea los buffers
+    public void update(float dt, FrameBuffer framebuffer, Scene currentScene) {
+        // Restaurar el viewport al tamaño total de la ventana para la UI
+        glViewport(0, 0, width, height);
+
+        if (imGuiLayer != null) {
+            imGuiLayer.update(dt, framebuffer,currentScene);
+        }
+
         glfwSwapBuffers(windowHandle);
-        //Leemos los inputs
         glfwPollEvents();
+
+        // Actualización dinámica del título de la ventana
+        frameCount++;
+        double currentTime = glfwGetTime();
+        if (currentTime - lastTime >= 0.25) {
+            int fps = (int) (frameCount / (currentTime - lastTime));
+
+            // Nombre del motor fijo + proyecto cargado
+            String gameName = org.ravenEngine.core.ProjectSettings.get().gameTitle;
+            String ideTitle = "RavenEngine IDE - [" + gameName + "] | FPS: " + fps;
+
+            glfwSetWindowTitle(windowHandle, ideTitle);
+            frameCount = 0;
+            lastTime = currentTime;
+        }
     }
-    public boolean shouldClose(){
+
+    public boolean shouldClose() {
         return glfwWindowShouldClose(windowHandle);
     }
-    public void cleanup(){
-        //rompemos todoo pero prolijo al salir
+
+    public void cleanup() {
+        // 1. Destruimos primero la capa de ImGui
+        if (imGuiLayer != null) {
+            imGuiLayer.destroy();
+        }
+
+        // 2. Liberamos todos los callbacks asociados a la ventana (mouse, teclado, etc.)
+        Callbacks.glfwFreeCallbacks(windowHandle);
+
+        // 3. Destruimos la ventana de GLFW
         glfwDestroyWindow(windowHandle);
+
+        // 4. Terminamos GLFW
         glfwTerminate();
+
+        // 5. Liberamos el manejador de errores de GLFW para que no tire excepción
+        var errorCb = glfwSetErrorCallback(null);
+        if (errorCb != null) {
+            errorCb.free();
+        }
     }
+    public void updateRuntime(float deltaTime) {
+        glfwSwapBuffers(this.windowHandle);
+        glfwPollEvents();
+    }
+
+    // Getters útiles para el resto del motor
+    public Long getWindowHandle() {
+        return windowHandle;
+    }
+
+    public ImGuiLayer getImGuiLayer() {
+        return imGuiLayer;
+    }
+
+    public int getWidth() {
+        return width;
+    }
+
+    public int getHeight() {
+        return height;
+    }
+
+
 }

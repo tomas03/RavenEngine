@@ -1,6 +1,5 @@
 package org.ravenEngine.renderer;
 
-import org.ravenEngine.components.SpriteRenderer;
 import org.ravenEngine.scene.GameObject;
 
 import java.util.ArrayList;
@@ -44,9 +43,22 @@ public class Renderer {
         }
     }
 
+    public void clear() {
+        this.batches.clear();
+    }
+
     public void render(Camera camera){
         for (RenderBatch batch : batches){
             batch.render(camera);
+        }
+    }
+    public void destroyGameObject(GameObject go) {
+        if (go.getComponent(SpriteRenderer.class) == null) return;
+
+        for (RenderBatch batch : batches) {
+            if (batch.destroyIfExists(go)) {
+                return;
+            }
         }
     }
 }

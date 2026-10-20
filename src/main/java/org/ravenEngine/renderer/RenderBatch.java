@@ -2,8 +2,9 @@ package org.ravenEngine.renderer;
 
 import org.joml.Vector2f;
 import org.joml.Vector4f;
-import org.ravenEngine.components.SpriteRenderer;
 import org.lwjgl.BufferUtils;
+import org.ravenEngine.scene.GameObject;
+import org.ravenEngine.util.AssetPool;
 
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
@@ -35,7 +36,8 @@ public class RenderBatch {
     private final Shader shader;
 
     public RenderBatch(int maxBatchSize, Shader shader) {
-        this.shader = shader;
+        // Pedimos la instancia cacheada al AssetPool
+        this.shader = AssetPool.getShader("/Shaders/default.vert", "/Shaders/default.frag");
         this.sprites = new SpriteRenderer[maxBatchSize];
         this.maxBatchSize = maxBatchSize;
 
@@ -93,6 +95,26 @@ public class RenderBatch {
         }
     }
 
+    public boolean destroyIfExists(GameObject go) {
+        SpriteRenderer spr = go.getComponent(SpriteRenderer.class);
+        if (spr != null) {
+            for (int i = 0; i < numSprites; i++) {
+                // Comparamos por componente o directamente por su GameObject
+                if (sprites[i] == spr || (sprites[i] != null && sprites[i].gameObject == go)) {
+                    // Corremos los elementos posteriores hacia la izquierda para cerrar el hueco
+                    for (int j = i; j < numSprites - 1; j++) {
+                        sprites[j] = sprites[j + 1];
+                    }
+                    sprites[numSprites - 1] = null;
+                    this.numSprites--;
+                    this.hasRoom = true;
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
     public void render(Camera camera) {
         // 1. Y-Sorting: Ordenamos los sprites activos por zIndex y luego por posición Y
         sortSprites();
@@ -137,12 +159,23 @@ public class RenderBatch {
         Vector2f[] texCoords = sprite.getTexCoords();
 
         // Buscamos cuál es el slot de esta textura (+1 porque 0 es color plano)
-        float texId = 0.0f;
+        int texId = 0;
         if (sprite.getTexture() != null) {
             for (int i = 0; i < textures.size(); i++) {
                 if (textures.get(i).equals(sprite.getTexture())) {
                     texId = i + 1;
                     break;
+                }
+            }
+
+            // Si la textura es nueva (ej: vino de una animación en tiempo de ejecución),
+            // la registramos en el batch para que el shader la active
+            if (texId == 0) {
+                if (textures.size() < 8) {
+                    textures.add(sprite.getTexture());
+                    texId = textures.size(); // Corresponde al nuevo índice (size - 1) + 1
+                } else {
+                    System.err.println("[RenderBatch] Límite de 8 texturas alcanzado en el batch.");
                 }
             }
         }
