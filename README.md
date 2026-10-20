@@ -2,8 +2,6 @@
 
 **RavenEngine** es un motor de videojuegos 2D moderno y ligero desarrollado desde cero en **Java** utilizando **LWJGL 3** y **OpenGL 3.3 Core**. Diseñado con una arquitectura modular basada en Entidades y Componentes (ECS) e integrado con un editor interactivo en tiempo real impulsado por **Dear ImGui**.
 
-El motor fue concebido como base técnica para el desarrollo del RPG top-down de alquimia y simulación **"Alchemist Shop"**.
-
 ## Características Principales
 
 ### Renderizado y Gráficos (OpenGL 3.3)
