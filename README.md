@@ -43,3 +43,32 @@
    ```bash
    git clone [https://github.com/tomas03/RavenEngine.git](https://github.com/tomas03/RavenEngine.git)
    cd RavenEngine
+   
+2. Compile and package the engine:
+    ```Bash
+
+    mvn clean package
+
+    This generates the executable Fat JAR at target/RavenEngine-IDE.jar.
+
+    Launch the Engine IDE:
+    Bash
+
+    java -jar target/RavenEngine-IDE.jar
+
+Standalone Distribution (jpackage)
+
+To bundle RavenEngine as a native standalone binary without requiring a system-wide JVM:
+```Bash
+
+jpackage \
+  --type app-image \
+  --name "RavenEngine" \
+  --input target/ \
+  --main-jar RavenEngine-IDE.jar \
+  --main-class org.ravenEngine.App \
+  --dest dist/
+```
+License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
