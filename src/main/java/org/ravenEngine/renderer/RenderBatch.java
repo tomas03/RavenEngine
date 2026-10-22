@@ -3,7 +3,10 @@ package org.ravenEngine.renderer;
 import org.joml.Vector2f;
 import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
-import org.ravenEngine.renderer.SpriteRenderer;
+import org.ravenEngine.renderer.texture.Shader;
+import org.ravenEngine.renderer.texture.SpriteRenderer;
+import org.ravenEngine.renderer.camera.Camera;
+import org.ravenEngine.renderer.texture.Texture;
 import org.ravenEngine.scene.GameObject;
 import org.ravenEngine.util.AssetPool;
 
@@ -186,11 +189,48 @@ public class RenderBatch {
         float y = sprite.gameObject.transform.pos.y;
         float w = sprite.gameObject.transform.scale.x;
         float h = sprite.gameObject.transform.scale.y;
+        float rot = sprite.gameObject.transform.rotation;
 
-        loadSingleVertex(offset, x + w, y + h, color, texCoords[0].x, texCoords[0].y, texId);
-        loadSingleVertex(offset + VERTEX_SIZE, x + w, y, color, texCoords[1].x, texCoords[1].y, texId);
-        loadSingleVertex(offset + (2 * VERTEX_SIZE), x, y, color, texCoords[2].x, texCoords[2].y, texId);
-        loadSingleVertex(offset + (3 * VERTEX_SIZE), x, y + h, color, texCoords[3].x, texCoords[3].y, texId);
+        float x0, y0, x1, y1, x2, y2, x3, y3;
+
+        // Si no está rotado, calculamos directo sin costo trigonométrico
+        if (rot == 0.0f) {
+            x0 = x + w; y0 = y + h; // Top-Right
+            x1 = x + w; y1 = y;     // Bottom-Right
+            x2 = x;     y2 = y;     // Bottom-Left
+            x3 = x;     y3 = y + h; // Top-Left
+        } else {
+            // Pivote central del objeto (mismo que toma el Gizmo)
+            float hw = w * 0.5f;
+            float hh = h * 0.5f;
+            float cx = x + hw;
+            float cy = y + hh;
+
+            float rad = (float) Math.toRadians(rot);
+            float cos = (float) Math.cos(rad);
+            float sin = (float) Math.sin(rad);
+
+            // 0: Top-Right (+hw, +hh)
+            x0 = cx + (hw * cos - hh * sin);
+            y0 = cy + (hw * sin + hh * cos);
+
+            // 1: Bottom-Right (+hw, -hh)
+            x1 = cx + (hw * cos - (-hh) * sin);
+            y1 = cy + (hw * sin + (-hh) * cos);
+
+            // 2: Bottom-Left (-hw, -hh)
+            x2 = cx + (-hw * cos - (-hh) * sin);
+            y2 = cy + (-hw * sin + (-hh) * cos);
+
+            // 3: Top-Left (-hw, +hh)
+            x3 = cx + (-hw * cos - hh * sin);
+            y3 = cy + (-hw * sin + hh * cos);
+        }
+
+        loadSingleVertex(offset, x0, y0, color, texCoords[0].x, texCoords[0].y, texId);
+        loadSingleVertex(offset + VERTEX_SIZE, x1, y1, color, texCoords[1].x, texCoords[1].y, texId);
+        loadSingleVertex(offset + (2 * VERTEX_SIZE), x2, y2, color, texCoords[2].x, texCoords[2].y, texId);
+        loadSingleVertex(offset + (3 * VERTEX_SIZE), x3, y3, color, texCoords[3].x, texCoords[3].y, texId);
     }
 
     private void loadSingleVertex(int offset, float x, float y, Vector4f c, float u, float v, float texId) {

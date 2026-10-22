@@ -22,7 +22,7 @@ public class ConsolePanel {
         ImGui.beginChild("ConsoleScrollRegion", 0, 0, false, ImGuiWindowFlags.HorizontalScrollbar);
         synchronized (EngineConsole.getLogs()) {
             for (String log : EngineConsole.getLogs()) {
-                if (log.startsWith("[ERROR]")) {
+                if (log.startsWith("[ERR]")) {
                     ImGui.textColored(1.0f, 0.4f, 0.4f, 1.0f, log);
                 } else if (log.startsWith("[Inventario]")) {
                     ImGui.textColored(0.4f, 1.0f, 0.4f, 1.0f, log);

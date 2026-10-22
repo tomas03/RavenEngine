@@ -2,7 +2,7 @@ package org.ravenEngine.components;
 
 import org.joml.Vector2f;
 import org.ravenEngine.core.Engine;
-import org.ravenEngine.renderer.Camera;
+import org.ravenEngine.renderer.camera.Camera;
 import org.ravenEngine.util.MathUtils;
 
 public class CameraFollow extends Component {
@@ -15,7 +15,6 @@ public class CameraFollow extends Component {
     private float minY = 0.0f;
     private float maxY = 360.0f;
 
-    // 1. Constructor vacío OBLIGATORIO para Gson
     public CameraFollow() {
     }
 
@@ -31,7 +30,8 @@ public class CameraFollow extends Component {
     }
 
     private void findCamera() {
-        if (this.camera == null && Engine.getCurrentScene() != null) {
+        if (Engine.getCurrentScene() != null) {
+            // Asegura agarrar la cámara del mundo
             this.camera = Engine.getCurrentScene().getCamera();
         }
     }
@@ -43,16 +43,25 @@ public class CameraFollow extends Component {
 
     @Override
     public void update(float dt) {
-        // Si no hay cámara o no está en simulación activa, no interferir con la vista del editor
+        // 1. Si se perdió la referencia tras deserializar o cambiar de escena, la busca de nuevo
+        if (this.camera == null) {
+            findCamera();
+        }
+
+        // 2. Solo seguir si estamos en modo Play (no interferir con el editor/paneo)
         if (this.camera == null || !Engine.IsPlaying() || Engine.IsPaused()) {
             return;
         }
 
+        if (gameObject == null || gameObject.transform == null) return;
+
         Vector2f projSize = camera.getProjectionSize() != null ? camera.getProjectionSize() : this.viewportSize;
 
+        // Centro del GameObject
         float targetX = gameObject.transform.pos.x - (projSize.x / 2.0f) + (gameObject.transform.scale.x / 2.0f);
         float targetY = gameObject.transform.pos.y - (projSize.y / 2.0f) + (gameObject.transform.scale.y / 2.0f);
 
+        // Suavizado con delta time independiente de framerate
         float t = 1.0f - (float) Math.exp(-smoothSpeed * dt);
 
         camera.position.x = MathUtils.lerp(camera.position.x, targetX, t);
@@ -62,7 +71,6 @@ public class CameraFollow extends Component {
     public void setCamera(Camera camera) {
         this.camera = camera;
     }
-
 
     public Vector2f getViewportSize() {
         return viewportSize;

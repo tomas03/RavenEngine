@@ -1,4 +1,4 @@
-package org.ravenEngine.editor;
+package org.ravenEngine.editor.codeEditor;
 
 import imgui.ImGui;
 import java.util.Arrays;

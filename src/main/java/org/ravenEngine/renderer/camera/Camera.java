@@ -1,4 +1,4 @@
-package org.ravenEngine.renderer;
+package org.ravenEngine.renderer.camera;
 
 import org.joml.Matrix4f;
 import org.joml.Vector2f;

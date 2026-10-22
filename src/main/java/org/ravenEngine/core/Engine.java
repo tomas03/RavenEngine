@@ -5,7 +5,7 @@ import org.joml.Vector3f;
 import org.ravenEngine.audio.AudioManager;
 import org.ravenEngine.editor.ImGuiLayer;
 import org.ravenEngine.io.MouseListener;
-import org.ravenEngine.renderer.DebugDraw;
+import org.ravenEngine.renderer.debug.DebugDraw;
 import org.ravenEngine.renderer.FrameBuffer;
 import org.ravenEngine.scene.GameObject;
 import org.ravenEngine.scene.Scene;
@@ -143,6 +143,13 @@ public class Engine {
                 isPaused = false;
             }
             currentScene.load(filePath);
+
+            // Si estamos jugando el juego final, arrancamos la simulación y scripts al cargar
+            if (currentMode == EngineMode.RUNTIME) {
+                isPlaying = true;
+                isPaused = false;
+                currentScene.start();
+            }
         } else {
             System.err.println("[Engine] No hay escena activa para cargar: " + filePath);
         }

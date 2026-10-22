@@ -3,7 +3,11 @@ package org.ravenEngine.components;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
-import org.ravenEngine.renderer.*;
+import org.ravenEngine.renderer.texture.Shader;
+import org.ravenEngine.renderer.texture.Sprite;
+import org.ravenEngine.renderer.texture.Spritesheet;
+import org.ravenEngine.renderer.camera.Camera;
+import org.ravenEngine.renderer.debug.DebugDraw;
 import org.ravenEngine.util.AssetPool;
 
 import java.nio.FloatBuffer;

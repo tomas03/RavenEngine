@@ -1,4 +1,4 @@
-package org.ravenEngine.renderer;
+package org.ravenEngine.renderer.camera;
 
 import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;

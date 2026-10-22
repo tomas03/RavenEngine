@@ -1,7 +1,9 @@
-package org.ravenEngine.renderer;
+package org.ravenEngine.renderer.debug;
 
 import org.joml.Vector2f;
 import org.joml.Vector3f;
+import org.ravenEngine.renderer.texture.Shader;
+import org.ravenEngine.renderer.camera.Camera;
 import org.ravenEngine.util.AssetPool;
 
 import java.util.ArrayList;
@@ -75,7 +77,7 @@ public class DebugDraw {
                 Vector2f position = (i == 0) ? line.getFrom() : line.getTo();
                 Vector3f color = line.getColor();
 
-                vertexArray[index]= position.x;
+                vertexArray[index]     = position.x;
                 vertexArray[index + 1] = position.y;
                 vertexArray[index + 2] = color.x;
                 vertexArray[index + 3] = color.y;
@@ -96,6 +98,9 @@ public class DebugDraw {
 
         glBindVertexArray(0);
         shader.detach();
+
+        // Vaciamos las líneas dibujadas para no mezclarlas con la siguiente cámara
+        lines.clear();
     }
 
     //MÉTODOS PÚBLICOS DE DIBUJADO
@@ -108,17 +113,37 @@ public class DebugDraw {
         addLine2D(from, to, color, 1);
     }
 
+    // 1. Versión rápida AABB clásica (min / max)
+    public static void addBox2D(Vector2f from, Vector2f to, Vector3f color) {
+        addLine2D(new Vector2f(from.x, from.y), new Vector2f(to.x, from.y), color);
+        addLine2D(new Vector2f(to.x, from.y), new Vector2f(to.x, to.y), color);
+        addLine2D(new Vector2f(to.x, to.y), new Vector2f(from.x, to.y), color);
+        addLine2D(new Vector2f(from.x, to.y), new Vector2f(from.x, from.y), color);
+    }
     // Dibuja una caja rectangular pasándole coordenadas mínimas y máximas
-    public static void addBox2D(Vector2f min, Vector2f max, Vector3f color) {
-        Vector2f p1 = new Vector2f(min.x, min.y);
-        Vector2f p2 = new Vector2f(max.x, min.y);
-        Vector2f p3 = new Vector2f(max.x, max.y);
-        Vector2f p4 = new Vector2f(min.x, max.y);
+    public static void addBox2D(Vector2f center, Vector2f dimensions, float rotation, Vector3f color) {
+        float hw = dimensions.x * 0.5f;
+        float hh = dimensions.y * 0.5f;
 
+        float rad = (float) Math.toRadians(rotation);
+        float cos = (float) Math.cos(rad);
+        float sin = (float) Math.sin(rad);
+
+        // Las 4 esquinas relativas al centro:
+        // 0: Bottom-Left (-hw, -hh)
+        // 1: Bottom-Right (+hw, -hh)
+        // 2: Top-Right (+hw, +hh)
+        // 3: Top-Left (-hw, +hh)
+        Vector2f p0 = new Vector2f(center.x + (-hw * cos - (-hh) * sin), center.y + (-hw * sin + (-hh) * cos));
+        Vector2f p1 = new Vector2f(center.x + ( hw * cos - (-hh) * sin), center.y + ( hw * sin + (-hh) * cos));
+        Vector2f p2 = new Vector2f(center.x + ( hw * cos -   hh  * sin), center.y + ( hw * sin +   hh  * cos));
+        Vector2f p3 = new Vector2f(center.x + (-hw * cos -   hh  * sin), center.y + (-hw * sin +   hh  * cos));
+
+        // Conectar las 4 esquinas formando el rectángulo
+        addLine2D(p0, p1, color);
         addLine2D(p1, p2, color);
         addLine2D(p2, p3, color);
-        addLine2D(p3, p4, color);
-        addLine2D(p4, p1, color);
+        addLine2D(p3, p0, color);
     }
     // DIBUJA UNA FLECHA CON PUNTA TRIANGULAR PARA REPRESENTAR UN EJE
     public static void addArrow2D(Vector2f from, Vector2f to, Vector3f color, float arrowHeadSize) {

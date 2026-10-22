@@ -5,14 +5,16 @@ import imgui.type.ImString;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-import org.ravenEngine.audio.AudioSource;
 import org.ravenEngine.components.*;
-import org.ravenEngine.renderer.SpriteRenderer;
+import org.ravenEngine.renderer.texture.SpriteRenderer;
+import org.ravenEngine.renderer.animation.Animation;
+import org.ravenEngine.renderer.texture.Sprite;
 import org.ravenEngine.scene.GameObject;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.util.List;
+import java.util.Map;
 
 public class InspectorWindow {
 
@@ -42,20 +44,34 @@ public class InspectorWindow {
 
         ImGui.separator();
 
-        // 2. COMPONENTE: TRANSFORM (Transform no se puede eliminar)
+        // 2. COMPONENTE: TRANSFORM
         Transform transform = selectedGameObject.transform;
         if (transform != null) {
             if (ImGui.collapsingHeader("Transform", imgui.flag.ImGuiTreeNodeFlags.DefaultOpen)) {
+                // Posición
                 f2Buffer[0] = transform.pos.x;
                 f2Buffer[1] = transform.pos.y;
-                if (ImGui.dragFloat2("Posicion", f2Buffer, 1.0f)) {
+                if (ImGui.dragFloat2("Posición", f2Buffer, 1.0f)) {
                     transform.pos.set(f2Buffer[0], f2Buffer[1]);
                 }
 
+                // Escala
                 f2Buffer[0] = transform.scale.x;
                 f2Buffer[1] = transform.scale.y;
                 if (ImGui.dragFloat2("Escala", f2Buffer, 1.0f)) {
-                    transform.scale.set(f2Buffer[0], f2Buffer[1]);
+                    transform.scale.set(Math.max(1.0f, f2Buffer[0]), Math.max(1.0f, f2Buffer[1]));
+                }
+
+                // Rotación (0° a 360°)
+                float[] rotBuffer = { transform.rotation };
+                if (ImGui.dragFloat("Rotación", rotBuffer, 1.0f, 0.0f, 360.0f, "%.1f°")) {
+                    transform.rotation = (rotBuffer[0] % 360.0f + 360.0f) % 360.0f;
+                }
+
+                // Z-Index
+                int[] zBuffer = { transform.zIndex };
+                if (ImGui.dragInt("Z-Index", zBuffer, 1.0f, -100, 100)) {
+                    transform.zIndex = zBuffer[0];
                 }
             }
         }
@@ -66,31 +82,166 @@ public class InspectorWindow {
         // 3. COMPONENTE: BOX COLLIDER 2D (Controles dedicados)
         BoxCollider2D collider = selectedGameObject.getComponent(BoxCollider2D.class);
         if (collider != null) {
-            ImGui.pushID("BoxCollider2D_Header");
-            boolean open = ImGui.collapsingHeader("BoxCollider2D", imgui.flag.ImGuiTreeNodeFlags.DefaultOpen);
-
-            // Clic derecho en el encabezado para eliminar
-            if (ImGui.beginPopupContextItem("ComponentContext_BoxCollider")) {
-                if (ImGui.menuItem("Eliminar BoxCollider2D")) {
-                    componentToRemove = collider;
-                }
-                ImGui.endPopup();
-            }
-
-            if (open) {
-                f2Buffer[0] = collider.getSize().x;
-                f2Buffer[1] = collider.getSize().y;
-                if (ImGui.dragFloat2("Tamano Collider", f2Buffer, 1.0f)) {
-                    collider.getSize().set(f2Buffer[0], f2Buffer[1]);
-                }
-
+            ImGui.separator();
+            if (ImGui.collapsingHeader("BoxCollider2D", imgui.flag.ImGuiTreeNodeFlags.DefaultOpen)) {
+                // Offset
                 f2Buffer[0] = collider.getOffset().x;
                 f2Buffer[1] = collider.getOffset().y;
-                if (ImGui.dragFloat2("Offset Collider", f2Buffer, 1.0f)) {
+                if (ImGui.dragFloat2("Offset", f2Buffer, 1.0f)) {
                     collider.getOffset().set(f2Buffer[0], f2Buffer[1]);
                 }
+
+                // Tamaño
+                f2Buffer[0] = collider.getSize().x;
+                f2Buffer[1] = collider.getSize().y;
+                if (ImGui.dragFloat2("Tamaño", f2Buffer, 1.0f)) {
+                    collider.getSize().set(Math.max(1.0f, f2Buffer[0]), Math.max(1.0f, f2Buffer[1]));
+                }
+
+                // Rotación
+                float[] colRotBuffer = new float[]{ collider.getRotation() };
+                if (ImGui.dragFloat("Rotación Col", colRotBuffer, 1.0f, -360.0f, 360.0f, "%.1f°")) {
+                    collider.setRotation(colRotBuffer[0]);
+                }
+
+                ImGui.spacing();
+
+                // Checkbox Estático
+                if (ImGui.checkbox("Estático", collider.isStatic())) {
+                    collider.setStatic(!collider.isStatic());
+                }
+                ImGui.sameLine();
+                ImGui.textDisabled("(Inmóvil)");
+
+                // Checkbox Trigger
+                if (ImGui.checkbox("Trigger", collider.isTrigger())) {
+                    collider.setTrigger(!collider.isTrigger());
+                }
+                ImGui.sameLine();
+                ImGui.textDisabled("(Zona de evento)");
             }
-            ImGui.popID();
+        }
+
+        // 3.5. COMPONENTE: SPRITE RENDERER (Slot dedicado con Drag & Drop)
+        SpriteRenderer spr = selectedGameObject.getComponent(SpriteRenderer.class);
+        if (spr != null) {
+            ImGui.separator();
+            if (ImGui.collapsingHeader("SpriteRenderer", imgui.flag.ImGuiTreeNodeFlags.DefaultOpen)) {
+                String currentTexturePath = "Sin textura (Arrastra una aquí)";
+                if (spr.getSprite() != null && spr.getSprite().getTexture() != null) {
+                    currentTexturePath = spr.getSprite().getTexture().getFilepath();
+                }
+
+                ImGui.text("Textura:");
+                ImGui.pushStyleColor(imgui.flag.ImGuiCol.Button, 0.2f, 0.22f, 0.27f, 1.0f);
+                ImGui.button(currentTexturePath, -1, 32);
+                ImGui.popStyleColor();
+
+                if (ImGui.beginDragDropTarget()) {
+                    Object payload = ImGui.acceptDragDropPayload("CONTENT_BROWSER_ITEM");
+                    if (payload != null) {
+                        String path = (payload instanceof byte[]) ? new String((byte[]) payload) : payload.toString();
+                        if (path.endsWith(".png") || path.endsWith(".jpg")) {
+                            var texture = org.ravenEngine.util.AssetPool.getTexture(path);
+                            if (texture != null) {
+                                spr.setSprite(new Sprite(texture));
+                                System.out.println("[Inspector] Textura cambiada a: " + path);
+                            }
+                        }
+                    }
+                    ImGui.endDragDropTarget();
+                }
+
+                // Color Tint
+                Vector4f color = spr.getColor();
+                if (color != null) {
+                    f4Buffer[0] = color.x;
+                    f4Buffer[1] = color.y;
+                    f4Buffer[2] = color.z;
+                    f4Buffer[3] = color.w;
+                    if (ImGui.colorEdit4("Color Tint", f4Buffer)) {
+                        color.set(f4Buffer[0], f4Buffer[1], f4Buffer[2], f4Buffer[3]);
+                    }
+                }
+            }
+        }
+
+        // 3.6. COMPONENTE: SPRITE ANIMATOR (Estilo Godot SpriteFrames)
+        SpriteAnimator animator = selectedGameObject.getComponent(SpriteAnimator.class);
+        if (animator != null) {
+            ImGui.separator();
+            if (ImGui.collapsingHeader("SpriteAnimator (SpriteFrames)", imgui.flag.ImGuiTreeNodeFlags.DefaultOpen)) {
+
+                // Flips
+                if (ImGui.checkbox("Flip H", animator.isFlipH())) {
+                    animator.setFlipH(!animator.isFlipH());
+                }
+                ImGui.sameLine();
+                if (ImGui.checkbox("Flip V", animator.isFlipV())) {
+                    animator.setFlipV(!animator.isFlipV());
+                }
+
+                // Selector de animación
+                Map<String, Animation> anims = animator.getAnimations();
+                String currentTitle = animator.getCurrentAnimation() != null ? animator.getCurrentAnimation().getTitle() : "Ninguna";
+
+                if (ImGui.beginCombo("Animación", currentTitle)) {
+                    for (String title : anims.keySet()) {
+                        boolean isSelected = title.equals(currentTitle);
+                        if (ImGui.selectable(title, isSelected)) {
+                            animator.play(title);
+                        }
+                        if (isSelected) ImGui.setItemDefaultFocus();
+                    }
+                    ImGui.endCombo();
+                }
+
+                Animation currentAnim = animator.getCurrentAnimation();
+                if (currentAnim != null) {
+                    // FPS del clip
+                    float[] fpsBuf = { currentAnim.getApproximateFPS() };
+                    if (ImGui.dragFloat("FPS", fpsBuf, 0.5f, 1.0f, 60.0f, "%.1f FPS")) {
+                        currentAnim.setFPS(fpsBuf[0]);
+                    }
+
+                    // Loop toggle
+                    if (ImGui.checkbox("Loop", currentAnim.isDoesLoop())) {
+                        currentAnim.setDoesLoop(!currentAnim.isDoesLoop());
+                    }
+
+                    // Multiplicador general de velocidad
+                    float[] speedBuf = { animator.getSpeed() };
+                    if (ImGui.dragFloat("Velocidad", speedBuf, 0.05f, 0.0f, 5.0f, "%.2fx")) {
+                        animator.setSpeed(speedBuf[0]);
+                    }
+
+                    ImGui.spacing();
+
+                    // Barra de Transporte: Play / Pause / Stop
+                    if (animator.isPlaying()) {
+                        if (ImGui.button("Pause", 75, 24)) animator.pause();
+                    } else {
+                        if (ImGui.button("Play", 75, 24)) animator.resume();
+                    }
+                    ImGui.sameLine();
+                    if (ImGui.button("Stop", 75, 24)) animator.stop();
+
+                    // Scrubber interactivo de Frames
+                    int totalFrames = currentAnim.getFrames().size();
+                    if (totalFrames > 0) {
+                        int[] frameIndex = { currentAnim.getCurrentFrameIndex() };
+                        if (ImGui.sliderInt("Frame", frameIndex, 0, totalFrames - 1, "%d / " + (totalFrames - 1))) {
+                            animator.pause();
+                            currentAnim.setCurrentFrameIndex(frameIndex[0]);
+                            animator.applyCurrentFrameToRenderer();
+                        }
+                    } else {
+                        ImGui.textDisabled("Animación sin frames.");
+                    }
+                } else {
+                    ImGui.textDisabled("No hay animaciones cargadas.");
+                }
+            }
         }
 
         // 4. INSPECTOR DINÁMICO POR REFLEXIÓN
@@ -99,8 +250,10 @@ public class InspectorWindow {
             for (int i = 0; i < components.size(); i++) {
                 Component component = components.get(i);
 
-                // Evitamos duplicar Transform y Collider ya procesados arriba
-                if (component instanceof BoxCollider2D) {
+                // Evitamos duplicar Transform, Collider, SpriteRenderer y SpriteAnimator
+                if (component instanceof BoxCollider2D ||
+                        component instanceof SpriteRenderer ||
+                        component instanceof SpriteAnimator) {
                     continue;
                 }
 
@@ -109,7 +262,6 @@ public class InspectorWindow {
                 ImGui.pushID(i);
                 boolean headerOpen = ImGui.collapsingHeader(headerName, imgui.flag.ImGuiTreeNodeFlags.DefaultOpen);
 
-                // Clic derecho en el encabezado del componente para eliminarlo
                 if (ImGui.beginPopupContextItem("ComponentContext_" + i)) {
                     if (ImGui.menuItem("Eliminar " + headerName)) {
                         componentToRemove = component;
@@ -142,16 +294,13 @@ public class InspectorWindow {
         if (go == null || comp == null) return;
 
         try {
-            // Intentar invocar go.removeComponent(Class) si está implementado
             java.lang.reflect.Method method = go.getClass().getMethod("removeComponent", Class.class);
             method.invoke(go, comp.getClass());
         } catch (Exception e) {
             try {
-                // Fallback a removeComponent(Component)
                 java.lang.reflect.Method method2 = go.getClass().getMethod("removeComponent", Component.class);
                 method2.invoke(go, comp);
             } catch (Exception ex) {
-                // Fallback directo a la lista de componentes
                 List<Component> list = go.getAllComponents();
                 if (list != null) {
                     list.remove(comp);
@@ -162,110 +311,102 @@ public class InspectorWindow {
     }
 
     private void renderComponentFields(Component component) {
-        Field[] fields = component.getClass().getDeclaredFields();
+        Class< ? > currentClass = component.getClass();
 
-        for (Field field : fields) {
-            int modifiers = field.getModifiers();
-            if (Modifier.isTransient(modifiers) || Modifier.isStatic(modifiers)) continue;
-            if (field.getName().equals("gameObject")) continue;
+        // Recorre la clase actual y sus clases padre (por ejemplo UIProgressBar -> UIElement)
+        while (currentClass != null && currentClass != Component.class) {
+            Field[] fields = currentClass.getDeclaredFields();
 
-            field.setAccessible(true);
-            Class<?> type = field.getType();
-            String label = field.getName();
+            for (Field field : fields) {
+                int modifiers = field.getModifiers();
+                if (Modifier.isTransient(modifiers) || Modifier.isStatic(modifiers)) continue;
+                if (field.getName().equals("gameObject")) continue;
 
-            ImGui.pushID(label);
+                field.setAccessible(true);
+                Class< ? > type = field.getType();
+                String label = field.getName();
 
-            try {
-                // TIPO: boolean
-                if (type == boolean.class) {
-                    boolean val = field.getBoolean(component);
-                    if (ImGui.checkbox(label, val)) {
-                        field.setBoolean(component, !val);
-                    }
-                }
-                // TIPO: int
-                else if (type == int.class) {
-                    intBuffer[0] = field.getInt(component);
-                    if (ImGui.dragInt(label, intBuffer)) {
-                        field.setInt(component, intBuffer[0]);
-                    }
-                }
-                // TIPO: float
-                else if (type == float.class) {
-                    f1Buffer[0] = field.getFloat(component);
-                    if (ImGui.dragFloat(label, f1Buffer, 0.05f)) {
-                        field.setFloat(component, f1Buffer[0]);
-                    }
-                }
-                // TIPO: String
-                else if (type == String.class) {
-                    String strVal = (String) field.get(component);
-                    if (strVal == null) strVal = "";
-                    strBuffer.set(strVal);
-                    if (ImGui.inputText(label, strBuffer)) {
-                        field.set(component, strBuffer.get());
-                    }
-                }
-                // TIPO: Enum (Combobox desplegable para RigidBody2D BodyType, etc.)
-                else if (type.isEnum()) {
-                    Object enumVal = field.get(component);
-                    Object[] enumConstants = type.getEnumConstants();
-                    String currentEnumName = (enumVal != null) ? enumVal.toString() : "";
+                ImGui.pushID(currentClass.getSimpleName() + "_" + label);
 
-                    if (ImGui.beginCombo(label, currentEnumName)) {
-                        for (Object constant : enumConstants) {
-                            boolean isSelected = constant.toString().equals(currentEnumName);
-                            if (ImGui.selectable(constant.toString(), isSelected)) {
-                                field.set(component, constant);
+                try {
+                    if (type == boolean.class) {
+                        boolean val = field.getBoolean(component);
+                        if (ImGui.checkbox(label, val)) {
+                            field.setBoolean(component, !val);
+                        }
+                    } else if (type == int.class) {
+                        intBuffer[0] = field.getInt(component);
+                        if (ImGui.dragInt(label, intBuffer)) {
+                            field.setInt(component, intBuffer[0]);
+                        }
+                    } else if (type == float.class) {
+                        f1Buffer[0] = field.getFloat(component);
+                        if (ImGui.dragFloat(label, f1Buffer, 0.05f)) {
+                            field.setFloat(component, f1Buffer[0]);
+                        }
+                    } else if (type == String.class) {
+                        String strVal = (String) field.get(component);
+                        if (strVal == null) strVal = "";
+                        strBuffer.set(strVal);
+                        if (ImGui.inputText(label, strBuffer)) {
+                            field.set(component, strBuffer.get());
+                        }
+                    } else if (type.isEnum()) {
+                        Object enumVal = field.get(component);
+                        Object[] enumConstants = type.getEnumConstants();
+                        String currentEnumName = (enumVal != null) ? enumVal.toString() : "";
+
+                        if (ImGui.beginCombo(label, currentEnumName)) {
+                            for (Object constant : enumConstants) {
+                                boolean isSelected = constant.toString().equals(currentEnumName);
+                                if (ImGui.selectable(constant.toString(), isSelected)) {
+                                    field.set(component, constant);
+                                }
+                                if (isSelected) {
+                                    ImGui.setItemDefaultFocus();
+                                }
                             }
-                            if (isSelected) {
-                                ImGui.setItemDefaultFocus();
+                            ImGui.endCombo();
+                        }
+                    } else if (type == Vector2f.class) {
+                        Vector2f vec = (Vector2f) field.get(component);
+                        if (vec != null) {
+                            f2Buffer[0] = vec.x;
+                            f2Buffer[1] = vec.y;
+                            if (ImGui.dragFloat2(label, f2Buffer, 0.5f)) {
+                                vec.set(f2Buffer[0], f2Buffer[1]);
                             }
                         }
-                        ImGui.endCombo();
-                    }
-                }
-                // TIPO: Vector2f
-                else if (type == Vector2f.class) {
-                    Vector2f vec = (Vector2f) field.get(component);
-                    if (vec != null) {
-                        f2Buffer[0] = vec.x;
-                        f2Buffer[1] = vec.y;
-                        if (ImGui.dragFloat2(label, f2Buffer, 0.5f)) {
-                            vec.set(f2Buffer[0], f2Buffer[1]);
+                    } else if (type == Vector3f.class) {
+                        Vector3f vec = (Vector3f) field.get(component);
+                        if (vec != null) {
+                            f3Buffer[0] = vec.x;
+                            f3Buffer[1] = vec.y;
+                            if (ImGui.dragFloat3(label, f3Buffer, 0.5f)) {
+                                vec.set(f3Buffer[0], f3Buffer[1], f3Buffer[2]);
+                            }
+                        }
+                    } else if (type == Vector4f.class) {
+                        Vector4f vec = (Vector4f) field.get(component);
+                        if (vec != null) {
+                            f4Buffer[0] = vec.x;
+                            f4Buffer[1] = vec.y;
+                            f4Buffer[2] = vec.z;
+                            f4Buffer[3] = vec.w;
+                            if (ImGui.colorEdit4(label, f4Buffer)) {
+                                vec.set(f4Buffer[0], f4Buffer[1], f4Buffer[2], f4Buffer[3]);
+                            }
                         }
                     }
+                } catch (IllegalAccessException e) {
+                    System.err.println("[Inspector ERROR] Falló acceso a: " + field.getName());
                 }
-                // TIPO: Vector3f
-                else if (type == Vector3f.class) {
-                    Vector3f vec = (Vector3f) field.get(component);
-                    if (vec != null) {
-                        f3Buffer[0] = vec.x;
-                        f3Buffer[1] = vec.y;
-                        f3Buffer[2] = vec.z;
-                        if (ImGui.dragFloat3(label, f3Buffer, 0.5f)) {
-                            vec.set(f3Buffer[0], f3Buffer[1], f3Buffer[2]);
-                        }
-                    }
-                }
-                // TIPO: Vector4f (Colores RGBA)
-                else if (type == Vector4f.class) {
-                    Vector4f vec = (Vector4f) field.get(component);
-                    if (vec != null) {
-                        f4Buffer[0] = vec.x;
-                        f4Buffer[1] = vec.y;
-                        f4Buffer[2] = vec.z;
-                        f4Buffer[3] = vec.w;
-                        if (ImGui.colorEdit4(label, f4Buffer)) {
-                            vec.set(f4Buffer[0], f4Buffer[1], f4Buffer[2], f4Buffer[3]);
-                        }
-                    }
-                }
-            } catch (IllegalAccessException e) {
-                System.err.println("[Inspector ERROR] Falló acceso a: " + field.getName());
+
+                ImGui.popID();
             }
 
-            ImGui.popID();
+            // Pasa a la clase padre
+            currentClass = currentClass.getSuperclass();
         }
     }
 
@@ -275,114 +416,35 @@ public class InspectorWindow {
         }
 
         if (ImGui.beginPopup("AddComponentPopup")) {
+            for (String category : org.ravenEngine.util.ComponentRegistry.getCategories()) {
+                List< Class< ? extends Component > > comps = org.ravenEngine.util.ComponentRegistry.getComponentsByCategory(category);
 
-            // ==========================================
-            // 1. RENDER & VISUALES
-            // ==========================================
-            if (ImGui.beginMenu("Rendering")) {
-                if (go.getComponent(org.ravenEngine.renderer.SpriteRenderer.class) == null) {
-                    if (ImGui.menuItem("SpriteRenderer")) {
-                        go.addComponent(new org.ravenEngine.renderer.SpriteRenderer());
-                        ImGui.closeCurrentPopup();
+                // Comprobar si queda al menos un componente disponible para agregar en esta categoría
+                boolean hasAvailable = false;
+                for (Class< ? extends Component > c : comps) {
+                    if (go.getComponent(c) == null) {
+                        hasAvailable = true;
+                        break;
                     }
                 }
 
-                if (go.getComponent(TextRenderer.class) == null) {
-                    if (ImGui.menuItem("TextRenderer")) {
-                        go.addComponent(new TextRenderer());
-                        ImGui.closeCurrentPopup();
+                if (hasAvailable && ImGui.beginMenu(category)) {
+                    for (Class< ? extends Component > compClass : comps) {
+                        if (go.getComponent(compClass) == null) {
+                            if (ImGui.menuItem(compClass.getSimpleName())) {
+                                try {
+                                    Component newComp = compClass.getDeclaredConstructor().newInstance();
+                                    go.addComponent(newComp);
+                                } catch (Exception e) {
+                                    System.err.println("[Inspector ERROR] No se pudo instanciar: " + compClass.getSimpleName());
+                                }
+                                ImGui.closeCurrentPopup();
+                            }
+                        }
                     }
+                    ImGui.endMenu();
                 }
-
-                if (go.getComponent(SpriteAnimator.class) == null) {
-                    if (ImGui.menuItem("SpriteAnimator")) {
-                        go.addComponent(new SpriteAnimator());
-                        ImGui.closeCurrentPopup();
-                    }
-                }
-
-                if (go.getComponent(ParticleSystem.class) == null) {
-                    if (ImGui.menuItem("ParticleSystem")) {
-                        go.addComponent(new ParticleSystem());
-                        ImGui.closeCurrentPopup();
-                    }
-                }
-
-                if (go.getComponent(Tilemap.class) == null) {
-                    if (ImGui.menuItem("Tilemap")) {
-                        go.addComponent(new Tilemap());
-                        ImGui.closeCurrentPopup();
-                    }
-                }
-                ImGui.endMenu();
             }
-
-            // ==========================================
-            // 2. FÍSICA & COLISIONES (2D)
-            // ==========================================
-            if (ImGui.beginMenu("Physics 2D")) {
-                if (go.getComponent(BoxCollider2D.class) == null) {
-                    if (ImGui.menuItem("BoxCollider2D")) {
-                        go.addComponent(new BoxCollider2D());
-                        ImGui.closeCurrentPopup();
-                    }
-                }
-
-                if (go.getComponent(RigidBody2D.class) == null) {
-                    if (ImGui.menuItem("RigidBody2D")) {
-                        go.addComponent(new RigidBody2D());
-                        ImGui.closeCurrentPopup();
-                    }
-                }
-                ImGui.endMenu();
-            }
-
-            // ==========================================
-            // 3. AUDIO
-            // ==========================================
-            if (ImGui.beginMenu("Audio")) {
-                if (go.getComponent(org.ravenEngine.audio.AudioSource.class) == null) {
-                    if (ImGui.menuItem("AudioSource")) {
-                        go.addComponent(new org.ravenEngine.audio.AudioSource());
-                        ImGui.closeCurrentPopup();
-                    }
-                }
-                ImGui.endMenu();
-            }
-
-            // ==========================================
-            // 4. GAMEPLAY & RPG
-            // ==========================================
-            if (ImGui.beginMenu("Gameplay")) {
-                if (go.getComponent(DialogueInteractable.class) == null) {
-                    if (ImGui.menuItem("DialogueInteractable (NPC / Cartel)")) {
-                        go.addComponent(new DialogueInteractable());
-                        ImGui.closeCurrentPopup();
-                    }
-                }
-
-                if (go.getComponent(Inventory.class) == null) {
-                    if (ImGui.menuItem("Inventory (Mochila / Cofre)")) {
-                        go.addComponent(new Inventory());
-                        ImGui.closeCurrentPopup();
-                    }
-                }
-                ImGui.endMenu();
-            }
-
-            // ==========================================
-            // 5. CÁMARA & UTILIDAD
-            // ==========================================
-            if (ImGui.beginMenu("Camera / Utility")) {
-                if (go.getComponent(CameraFollow.class) == null) {
-                    if (ImGui.menuItem("CameraFollow")) {
-                        go.addComponent(new CameraFollow());
-                        ImGui.closeCurrentPopup();
-                    }
-                }
-                ImGui.endMenu();
-            }
-
             ImGui.endPopup();
         }
     }

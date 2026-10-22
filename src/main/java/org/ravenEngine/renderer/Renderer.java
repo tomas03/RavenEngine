@@ -1,5 +1,9 @@
 package org.ravenEngine.renderer;
 
+import org.ravenEngine.renderer.texture.Shader;
+import org.ravenEngine.renderer.texture.SpriteRenderer;
+import org.ravenEngine.renderer.camera.Camera;
+import org.ravenEngine.renderer.texture.Texture;
 import org.ravenEngine.scene.GameObject;
 
 import java.util.ArrayList;

@@ -5,7 +5,7 @@ import org.joml.Vector2f;
 import org.joml.Vector4f;
 import org.lwjgl.system.MemoryStack;
 import org.ravenEngine.particles.Particle;
-import org.ravenEngine.renderer.Camera;
+import org.ravenEngine.renderer.camera.Camera;
 
 import java.nio.FloatBuffer;
 import java.util.Random;

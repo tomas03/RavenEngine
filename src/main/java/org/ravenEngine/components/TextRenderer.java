@@ -7,7 +7,7 @@ import org.lwjgl.BufferUtils;
 import org.lwjgl.stb.STBTTAlignedQuad;
 import org.lwjgl.stb.STBTruetype;
 import org.lwjgl.system.MemoryStack;
-import org.ravenEngine.renderer.Camera;
+import org.ravenEngine.renderer.camera.Camera;
 import org.ravenEngine.renderer.text.Font;
 
 import java.io.File;

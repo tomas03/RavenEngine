@@ -1,4 +1,4 @@
-package org.ravenEngine.renderer;
+package org.ravenEngine.renderer.texture;
 
 import org.joml.Vector2f;
 import org.joml.Vector4f;
@@ -46,7 +46,10 @@ public class SpriteRenderer extends Component {
 
     @Override
     public void start() {
-        // Al recargar desde JSON, reconectamos la textura con la GPU mediante AssetPool
+        reinit();
+    }
+    // Método explícito para reconectar textura viva desde el disco/GPU
+    public void reinit() {
         if (this.sprite != null && this.sprite.getTexture() != null) {
             String path = this.sprite.getTexture().getFilepath();
             if (path != null && !path.isEmpty()) {
@@ -108,5 +111,8 @@ public class SpriteRenderer extends Component {
     public void setDirty() {this.isDirty = true;}
     public void setClean() {
         this.isDirty = false;
+    }
+    public Sprite getSprite() {
+        return this.sprite;
     }
 }

@@ -1,6 +1,6 @@
 package org.ravenEngine.renderer.animation;
 
-import org.ravenEngine.renderer.Sprite;
+import org.ravenEngine.renderer.texture.Sprite;
 
 public class Frame {
     public Sprite sprite;

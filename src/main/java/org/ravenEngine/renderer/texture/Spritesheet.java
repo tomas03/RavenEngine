@@ -1,4 +1,4 @@
-package org.ravenEngine.renderer;
+package org.ravenEngine.renderer.texture;
 
 import org.joml.Vector2f;
 
@@ -7,7 +7,7 @@ import java.util.List;
 
 public class Spritesheet {
     private final Texture texture;
-    private final List< Sprite > sprites;
+    private final List<Sprite> sprites;
 
     // Constructor automático: calcula las columnas según el ancho de la imagen
     public Spritesheet(Texture texture, int spriteWidth, int spriteHeight, int numSprites, int spacing) {

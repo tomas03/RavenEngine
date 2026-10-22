@@ -1,4 +1,4 @@
-package org.ravenEngine.renderer;
+package org.ravenEngine.renderer.texture;
 
 import org.joml.Vector2f;
 

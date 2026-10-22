@@ -5,12 +5,14 @@ import com.google.gson.GsonBuilder;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.ravenEngine.components.*;
-import org.ravenEngine.core.Engine;
-import org.ravenEngine.core.Window;
-import org.ravenEngine.editor.GizmoRenderer;
 import org.ravenEngine.io.KeyListener;
 import org.ravenEngine.physics.Physics2D;
 import org.ravenEngine.renderer.*;
+import org.ravenEngine.renderer.camera.UICamera;
+import org.ravenEngine.renderer.texture.SpriteRenderer;
+import org.ravenEngine.renderer.camera.Camera;
+import org.ravenEngine.renderer.camera.ScreenFade;
+import org.ravenEngine.renderer.debug.DebugDraw;
 import org.ravenEngine.util.ComponentDeserializer;
 import org.ravenEngine.util.ComponentSerializer;
 
@@ -19,13 +21,15 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract class Scene {
+public class Scene {
     protected Camera camera;
-    protected final List< GameObject > gameObjects = new ArrayList< >();
+    protected final List< GameObject > gameObjects = new ArrayList<>();
+    // 1. Declarar sin instanciar inline
     protected Renderer renderer;
     private boolean isRunning = false;
-    private final List< GameObject > pendingToDestroy = new ArrayList< >();
+    private final List< GameObject > pendingToDestroy = new ArrayList<>();
 
+    protected transient UICamera uiCamera = new UICamera(1280.0f, 720.0f);
     private transient ScreenFade screenFade = new ScreenFade();
 
     // Subsistema de físicas desacoplado
@@ -38,19 +42,36 @@ public abstract class Scene {
         this.camera = new Camera(new Vector2f(0.0f, 0.0f));
     }
 
-    public abstract void init();
+    public void init(){};
 
+    /**
+     * Se llama cuando presionas PLAY en el editor o arranca el juego standalone.
+     * En este punto TODOS los objetos de la escena ya existen en memoria.
+     */
     public void start() {
-        if (renderer == null) {
+        if (this.renderer == null) {
             this.renderer = new Renderer();
         }
 
-        for (GameObject go : gameObjects) {
-            go.start();
+        this.isRunning = true;
+
+        for (GameObject go : this.gameObjects) {
+            go.start(); // Ejecuta c.invokeStart() asegurando que todos los GameObjects existan
             this.renderer.add(go);
             this.physics2D.add(go);
         }
-        isRunning = true;
+    }
+
+    /**
+     * Se llama cuando presionas STOP en el editor.
+     */
+    public void stop() {
+        this.isRunning = false;
+        for (GameObject go : this.gameObjects) {
+            for (Component c : go.getAllComponents()) {
+                c.resetState();
+            }
+        }
     }
 
     public void update(float dt) {
@@ -59,13 +80,12 @@ public abstract class Scene {
             System.out.println("[Scene] Debug Mode cambiado a: " + debugMode);
         }
 
-        // 1. Limpieza limpia de objetos destruidos al final/inicio del frame
+        // 1. Limpieza de objetos destruidos al final/inicio del frame
         if (!this.pendingToDestroy.isEmpty()) {
             for (GameObject go : this.pendingToDestroy) {
                 this.gameObjects.remove(go);
                 this.physics2D.remove(go);
 
-                // Sacamos únicamente el sprite del objeto destruido sin tocar los demás
                 if (this.renderer != null) {
                     this.renderer.destroyGameObject(go);
                 }
@@ -81,48 +101,42 @@ public abstract class Scene {
             this.screenFade.update(dt);
         }
 
-        // 3. Update de lógica de componentes
-        for (GameObject go : gameObjects) {
-            go.update(dt);
+        // 2. Solo actualizamos la lógica si la escena está activa
+        if (this.isRunning) {
+            for (GameObject go : this.gameObjects) {
+                go.update(dt);
+            }
+            this.physics2D.update(dt, this.gameObjects);
         }
-
-        // 4. Paso de simulación de físicas desacoplado
-        this.physics2D.update(dt, this.gameObjects);
     }
 
     // ==========================================
     // PERSISTENCIA (GUARDADO Y CARGA)
     // ==========================================
     public void save(String filePath) {
-        if (org.ravenEngine.core.Engine.IsPlaying()) {
-            System.err.println("[Alerta] No se puede guardar la escena mientras la simulación está activa.");
-            return;
-        }
+        if (filePath == null || filePath.isEmpty()) return;
 
-        // 1. Aseguramos la existencia de las carpetas intermedias
-        File file = new File(filePath);
-        File parentDir = file.getParentFile();
-        if (parentDir != null && !parentDir.exists()) {
-            parentDir.mkdirs();
-        }
+        try {
+            java.io.File file = new java.io.File(filePath);
 
-        Gson gson = new GsonBuilder()
-                .setPrettyPrinting()
-                .registerTypeAdapter(Component.class, new ComponentSerializer())
-                .registerTypeAdapter(Component.class, new ComponentDeserializer())
-                .excludeFieldsWithModifiers(java.lang.reflect.Modifier.TRANSIENT | java.lang.reflect.Modifier.STATIC)
-                .create();
+            // Crea las carpetas intermedias (ej: assets/) si no existen
+            if (file.getParentFile() != null && !file.getParentFile().exists()) {
+                file.getParentFile().mkdirs();
+            }
 
-        String jsonOutput = gson.toJson(this.gameObjects.toArray(new GameObject[0]));
+            Gson gson = new GsonBuilder()
+                    .setPrettyPrinting()
+                    .registerTypeAdapter(Component.class, new ComponentSerializer())
+                    .registerTypeAdapter(Component.class, new ComponentDeserializer())
+                    .excludeFieldsWithModifiers(java.lang.reflect.Modifier.TRANSIENT | java.lang.reflect.Modifier.STATIC)
+                    .create();
 
-        // 2. Escribimos sobre la instancia de File ya validada
-        try (BufferedWriter writer = new BufferedWriter(
-                new OutputStreamWriter(new FileOutputStream(file), StandardCharsets.UTF_8))) {
-            writer.write(jsonOutput);
-            writer.flush();
-            System.out.println("[Motor] Escena guardada correctamente en: " + filePath);
+            String json = gson.toJson(this.gameObjects);
+            java.nio.file.Files.writeString(file.toPath(), json);
+
+            System.out.println("[Scene] Escena guardada correctamente en: " + file.getAbsolutePath());
         } catch (Exception e) {
-            System.err.println("[Error] Falló el guardado del archivo JSON: " + e.getMessage());
+            System.err.println("[Error] Falló el guardado del archivo JSON: " + filePath + " (" + e.getMessage() + ")");
             e.printStackTrace();
         }
     }
@@ -134,7 +148,6 @@ public abstract class Scene {
             return;
         }
 
-        // Vaciado de colecciones previo a la deserialización
         this.gameObjects.clear();
         this.physics2D.clear();
         if (this.renderer != null) {
@@ -162,9 +175,8 @@ public abstract class Scene {
                         }
                     }
 
+                    // Se agrega a la escena y a la GPU sin ejecutar start()
                     this.addGameObjectToScene(go);
-                    go.start();
-
                     if (this.renderer != null) {
                         this.renderer.add(go);
                     }
@@ -174,6 +186,28 @@ public abstract class Scene {
         } catch (IOException e) {
             System.err.println("[Scene] Error al cargar la escena: " + e.getMessage());
             e.printStackTrace();
+        }
+
+        // Reconstrucción de jerarquías y transforms
+        for (GameObject go : this.gameObjects) {
+            if (go.transform != null) {
+                go.transform.gameObject = go;
+            }
+            if (go.getParentName() != null && !go.getParentName().isEmpty()) {
+                for (GameObject potentialParent : this.gameObjects) {
+                    if (potentialParent.getName().equals(go.getParentName())) {
+                        potentialParent.addChild(go);
+                        break;
+                    }
+                }
+            }
+        }
+
+        // Si se cargó la escena mientras el juego ya estaba en Play, arrancamos los objetos
+        if (this.isRunning) {
+            for (GameObject go : this.gameObjects) {
+                go.start();
+            }
         }
     }
 
@@ -211,15 +245,31 @@ public abstract class Scene {
                     for (Component c : go.getComponents()) {
                         c.gameObject = go;
 
+                        // 1. Re-conectar cámara al script de seguimiento
                         if (c instanceof CameraFollow) {
                             ((CameraFollow) c).setCamera(this.camera);
                         }
+
+                        // 2. Reconectar textura con AssetPool (para que no quede negra)
+                        if (c instanceof SpriteRenderer) {
+                            ((SpriteRenderer) c).start(); // Llama a la reconexión de textura que ya tenías en start()
+                        }
+
+                        // 3. Re-crear shaders y VBOs del Tilemap para el editor
+                        if (c instanceof Tilemap) {
+                            ((Tilemap) c).start();
+                        }
                     }
                 }
-
                 this.addGameObjectToScene(go);
-
-                if (!isRunning) {
+                // Asegurar que el renderer del editor lo dibuje aunque isRunning sea false
+                if (this.renderer != null) {
+                    this.renderer.add(go);
+                }
+            }
+            // Solo los scripts de jugabilidad (movimiento, daño, etc.) esperan al modo Play
+            if (this.isRunning) {
+                for (GameObject go : this.gameObjects) {
                     go.start();
                 }
             }
@@ -236,7 +286,7 @@ public abstract class Scene {
 
         this.physics2D.add(go);
 
-        if (isRunning) {
+        if (this.isRunning) {
             go.start();
             if (this.renderer != null) {
                 this.renderer.add(go);
@@ -244,18 +294,9 @@ public abstract class Scene {
         }
     }
 
-
     public void spawnGameObject(GameObject go) {
         if (go == null) return;
-        this.gameObjects.add(go);
-        this.physics2D.add(go);
-
-        if (this.isRunning) {
-            go.start();
-            if (this.renderer != null) {
-                this.renderer.add(go);
-            }
-        }
+        this.addGameObjectToScene(go);
     }
 
     // ==========================================
@@ -270,12 +311,11 @@ public abstract class Scene {
             }
         }
 
-        // 2. Y-Sorting robusto (Capas + Pies + Null-safe)
+        // 2. Y-Sorting
         this.gameObjects.sort((a, b) -> {
             boolean aIsTilemap = a.getComponent(Tilemap.class) != null;
             boolean bIsTilemap = b.getComponent(Tilemap.class) != null;
 
-            // Si ambos son Tilemaps o ninguno lo es, se resuelve con la lógica de abajo
             if (aIsTilemap && bIsTilemap) return 0;
             if (aIsTilemap) return -1;
             if (bIsTilemap) return 1;
@@ -287,18 +327,16 @@ public abstract class Scene {
             SpriteRenderer sprA = a.getComponent(SpriteRenderer.class);
             SpriteRenderer sprB = b.getComponent(SpriteRenderer.class);
 
-            // Calcular profundidad (Mayor Y = más al fondo = se dibuja primero)
             float depthA = (sprA != null) ? sprA.getDepthValue() : a.transform.pos.y;
             float depthB = (sprB != null) ? sprB.getDepthValue() : b.transform.pos.y;
 
-            // Orden descendente: los valores con mayor Y van primero
             return Float.compare(depthB, depthA);
         });
 
         // 3. Entidades ordenadas
         this.renderer.render(this.camera);
 
-        // 4.1 SISTEMA DE PARTÍCULAS
+        // 4.1 Partículas del mundo
         for (GameObject go : this.gameObjects) {
             ParticleSystem ps = go.getComponent(ParticleSystem.class);
             if (ps != null) {
@@ -306,7 +344,7 @@ public abstract class Scene {
             }
         }
 
-        // 4.2 RENDERIZADO DE TEXTO EN EL MUNDO
+        // 4.2 Texto en el mundo
         for (GameObject go : this.gameObjects) {
             TextRenderer tr = go.getComponent(TextRenderer.class);
             if (tr != null) {
@@ -314,7 +352,7 @@ public abstract class Scene {
             }
         }
 
-        // 5. Debug bounds y gizmos
+        // 5. Pasada de debug del mundo (Colliders con la cámara del juego)
         if (debugMode) {
             for (GameObject go : this.gameObjects) {
                 Tilemap tm = go.getComponent(Tilemap.class);
@@ -324,14 +362,35 @@ public abstract class Scene {
             }
 
             for (BoxCollider2D col : this.physics2D.getColliders()) {
-                Vector2f min = new Vector2f(col.getMinX(), col.getMinY());
-                Vector2f max = new Vector2f(col.getMaxX(), col.getMaxY());
-                DebugDraw.addBox2D(min, max, new Vector3f(0.0f, 1.0f, 0.0f));
+                if (col.gameObject == null || col.gameObject.transform == null) continue;
+
+                Vector2f center = new Vector2f(
+                        col.gameObject.transform.pos.x + col.getOffset().x + (col.getSize().x * 0.5f),
+                        col.gameObject.transform.pos.y + col.getOffset().y + (col.getSize().y * 0.5f)
+                );
+
+                Vector3f color = col.isTrigger() ? new Vector3f(1.0f, 0.85f, 0.0f) : new Vector3f(0.0f, 1.0f, 0.0f);
+                DebugDraw.addBox2D(center, col.getSize(), col.getRotation(), color);
             }
 
             DebugDraw.draw(this.camera);
         }
 
+        // 6. Pasada de interfaz (HUD con UICamera fija)
+        for (GameObject go : this.gameObjects) {
+            List< Component > comps = go.getAllComponents();
+            if (comps == null) continue;
+
+            for (Component c : comps) {
+                if (c instanceof UIElement && ((UIElement) c).isVisible()) {
+                    ((UIElement) c).renderUI(this.uiCamera);
+                }
+            }
+        }
+
+        DebugDraw.draw(this.uiCamera);
+
+        // 7. Overlays finales
         if (this.screenFade != null) {
             this.screenFade.render();
         }
@@ -342,7 +401,6 @@ public abstract class Scene {
     // ==========================================
     // GESTIÓN DE ENTIDADES Y DESTRUCCIÓN
     // ==========================================
-
     public void destroyGameObjectImmediate(GameObject go) {
         if (go == null) return;
 
@@ -358,38 +416,35 @@ public abstract class Scene {
     public void destroyGameObject(GameObject go) {
         if (go == null) return;
 
-        // Si estamos en el editor (simulación apagada), borra al instante de la GPU
-        if (!org.ravenEngine.core.Engine.IsPlaying()) {
+        if (!this.isRunning) {
             destroyGameObjectImmediate(go);
         } else if (!this.pendingToDestroy.contains(go)) {
             this.pendingToDestroy.add(go);
         }
     }
 
+    public void resizeUI(float width, float height) {
+        if (this.uiCamera != null) {
+            this.uiCamera.adjustProjection(width, height);
+        }
+    }
+
     // ==========================================
     // GETTERS Y SETTERS
     // ==========================================
-    public void toggleDebugMode() {
-        this.debugMode = !this.debugMode;
-    }
+    public boolean isRunning() { return this.isRunning; }
 
-    public boolean isDebugMode() {
-        return this.debugMode;
-    }
+    public void toggleDebugMode() { this.debugMode = !this.debugMode; }
 
-    public Camera getCamera() {
-        return camera;
-    }
+    public boolean isDebugMode() { return this.debugMode; }
 
-    public List< GameObject > getGameObjects() {
-        return this.gameObjects;
-    }
+    public Camera getCamera() { return camera; }
 
-    public Physics2D getPhysics2D() {
-        return physics2D;
-    }
+    public List< GameObject > getGameObjects() { return this.gameObjects; }
 
-    public ScreenFade getScreenFade() {
-        return screenFade;
-    }
+    public Physics2D getPhysics2D() { return physics2D; }
+
+    public ScreenFade getScreenFade() { return screenFade; }
+
+    public UICamera getUICamera() { return this.uiCamera; }
 }

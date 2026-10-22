@@ -1,9 +1,9 @@
 package org.ravenEngine.util;
 
 import org.ravenEngine.audio.Sound;
-import org.ravenEngine.renderer.Shader;
-import org.ravenEngine.renderer.Spritesheet;
-import org.ravenEngine.renderer.Texture;
+import org.ravenEngine.renderer.texture.Shader;
+import org.ravenEngine.renderer.texture.Spritesheet;
+import org.ravenEngine.renderer.texture.Texture;
 
 import java.io.File;
 import java.util.HashMap;

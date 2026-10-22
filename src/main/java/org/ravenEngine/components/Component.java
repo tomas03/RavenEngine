@@ -4,9 +4,15 @@ import org.ravenEngine.scene.GameObject;
 
 public class Component {
     public transient GameObject gameObject = null;
+    private transient boolean started = false;
 
     public void start(){}
     public void update(float dt){}
+    public void invokeStart() {if (!this.started) {this.start();this.started = true;}}
+
+    public void resetState() {
+        this.started = false;
+    }
 
     // Eventos de colisión física (cuerpos sólidos)
     public void onCollisionEnter(GameObject other) {}

@@ -1,10 +1,11 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0"
          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
-  <modelVersion >4.0.0</modelVersion>
+  <modelVersion>4.0.0</modelVersion>
   <groupId>com.ravenEngine</groupId>
   <artifactId>RavenEngine</artifactId>
   <version>1.0-SNAPSHOT</version>
+
   <properties>
     <maven.compiler.source>17</maven.compiler.source>
     <maven.compiler.target>17</maven.compiler.target>
@@ -14,8 +15,8 @@
     <joml.version>1.10.5</joml.version>
     <imgui.version>1.86.11</imgui.version>
   </properties>
-  <dependencies>
 
+  <dependencies>
     <!-- LWJGL Core -->
     <dependency>
       <groupId>org.lwjgl</groupId>
@@ -29,20 +30,18 @@
       <classifier>${lwjgl.natives}</classifier>
     </dependency>
 
-    <!-- Módulo OpenAL de LWJGL -->
+    <!-- Modulo OpenAL de LWJGL -->
     <dependency>
-    <groupId>org.lwjgl</groupId >
-    <artifactId>lwjgl-openal</artifactId>
-    <version>${lwjgl.version}</version>
+      <groupId>org.lwjgl</groupId>
+      <artifactId>lwjgl-openal</artifactId>
+      <version>${lwjgl.version}</version>
     </dependency>
-
-    <!-- Nativos de OpenAL -->
     <dependency>
-    <groupId>org.lwjgl</groupId>
-    <artifactId>lwjgl-openal</artifactId>
-    <version>${lwjgl.version}</version>
-    <classifier>${lwjgl.natives}</classifier>
-    <scope>runtime</scope>
+      <groupId>org.lwjgl</groupId>
+      <artifactId>lwjgl-openal</artifactId>
+      <version>${lwjgl.version}</version>
+      <classifier>${lwjgl.natives}</classifier>
+      <scope>runtime</scope>
     </dependency>
 
     <!-- GLFW (Ventanas e Inputs) -->
@@ -70,6 +69,7 @@
       <version>${lwjgl.version}</version>
       <classifier>${lwjgl.natives}</classifier>
     </dependency>
+
     <!-- OpenGL -->
     <dependency>
       <groupId>org.lwjgl</groupId>
@@ -115,7 +115,8 @@
       <version>${imgui.version}</version>
       <scope>runtime</scope>
     </dependency>
-    <!--GSON-->
+
+    <!-- GSON -->
     <dependency>
       <groupId>com.google.code.gson</groupId>
       <artifactId>gson</artifactId>
@@ -123,4 +124,68 @@
     </dependency>
   </dependencies>
 
-        </project>
+  <build>
+    <!-- Empaquetar fuentes, shaders, imagenes y JSONs dentro del JAR -->
+    <resources>
+      <resource>
+        <directory>src/main/resources</directory>
+      </resource>
+      <resource>
+        <directory>src/main/java</directory>
+        <includes>
+          <include>**/*.ttf</include>
+          <include>**/*.png</include>
+          <include>**/*.jpg</include>
+          <include>**/*.glsl</include>
+          <include>**/*.json</include>
+        </includes>
+      </resource>
+    </resources>
+
+    <plugins>
+      <!-- Compilador Java 17 -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.11.0</version>
+        <configuration>
+          <source>17</source>
+          <target>17</target>
+        </configuration>
+      </plugin>
+
+      <!-- Fat JAR ejecutable del Motor completo (RavenEngine IDE) -->
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>3.5.1</version>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>shade</goal>
+            </goals>
+            <configuration>
+              <finalName>RavenEngine-IDE</finalName>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <mainClass>org.ravenEngine.App</mainClass>
+                </transformer>
+              </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
+  </build>
+</project>

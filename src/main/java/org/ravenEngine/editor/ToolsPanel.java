@@ -33,6 +33,10 @@ public class ToolsPanel {
             currentGizmoType = GizmoRenderer.GizmoType.TRANSLATE;
         }
         ImGui.sameLine();
+        if (ImGui.radioButton("Rotar (E)", currentGizmoType == GizmoRenderer.GizmoType.ROTATE)) {
+            currentGizmoType = GizmoRenderer.GizmoType.ROTATE;
+        }
+        ImGui.sameLine();
         if (ImGui.radioButton("Escalar (R)", currentGizmoType == GizmoRenderer.GizmoType.SCALE)) {
             currentGizmoType = GizmoRenderer.GizmoType.SCALE;
         }
